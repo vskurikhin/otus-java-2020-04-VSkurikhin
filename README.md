@@ -1,2 +1,11 @@
 # otus-java-2020-04-VSkurikhin
-The Hi-load student project of the Social Network
+
+Архитектор высоких нагрузок.
+
+Группа 2020-04
+
+Виктор Скурихин (Victor Skurikhin)
+
+
+## Table of Contents
+- [Разработать создание и просмотр анект в социальной сети.](#HomeWork-1)

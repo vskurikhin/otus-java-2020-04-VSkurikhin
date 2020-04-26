@@ -1,5 +1,6 @@
 package su.svn.hiload.socialnetwork.model.security;
 
+import org.springframework.security.core.userdetails.UserDetails;
 import su.svn.hiload.socialnetwork.model.DBEntry;
 
 import java.io.Serializable;
