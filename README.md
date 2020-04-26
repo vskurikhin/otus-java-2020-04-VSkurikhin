@@ -8,4 +8,4 @@
 
 
 ## Table of Contents
-- [Разработать создание и просмотр анект в социальной сети.](#HomeWork-1)
+- [Разработать создание и просмотр анект в социальной сети.](#https://github.com/vskurikhin/otus-java-2020-04-VSkurikhin/tree/master/HomeWork-1)

@@ -55,7 +55,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-logging'
     implementation 'dev.miku:r2dbc-mysql'
+    implementation group: 'org.webjars', name: 'bootstrap', version: '3.4.1'
     runtimeOnly group: 'mysql', name: 'mysql-connector-java', version: libVers.mysql_connector_java
+
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: libVers.projectlombok
     annotationProcessor 'org.projectlombok:lombok'

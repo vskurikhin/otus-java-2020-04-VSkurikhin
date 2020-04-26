@@ -3,6 +3,7 @@ package su.svn.hiload.socialnetwork.configs;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -10,6 +11,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfiguration {
 
     @Value("${application.security.strength}")
@@ -20,12 +22,14 @@ public class SecurityConfiguration {
         return http
                 .csrf().disable()
                 .authorizeExchange()
-                .pathMatchers("/login", "/logout").permitAll()
+                .pathMatchers("/", "/index.html", "/login", "/logout").permitAll()
                 .pathMatchers("/i18n/**",
                         "/css/**",
                         "/fonts/**",
                         "/img/**",
-                        "/js/**").permitAll()
+                        "/js/**",
+                        "/webjars/**").permitAll()
+                .pathMatchers("/user/**").hasRole("USER")
                 .anyExchange()
                 .authenticated()
                 .and()

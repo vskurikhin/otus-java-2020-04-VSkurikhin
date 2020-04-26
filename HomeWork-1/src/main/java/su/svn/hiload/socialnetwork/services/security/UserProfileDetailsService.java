@@ -4,8 +4,9 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import su.svn.hiload.socialnetwork.dao.UserProfileDao;
+import su.svn.hiload.socialnetwork.dao.jdbc.UserProfileDao;
 import su.svn.hiload.socialnetwork.exceptions.NotFound;
+import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.model.security.UserProfileDetails;
 
 @Service
@@ -19,6 +20,9 @@ public class UserProfileDetailsService implements ReactiveUserDetailsService {
 
     @Override
     public Mono<UserDetails> findByUsername(String username) {
-        return Mono.just(new UserProfileDetails(userProfileDao.findByLogin(username).orElseThrow(NotFound::is)));
+        UserProfile userProfile= userProfileDao.findByLogin(username).orElseThrow(NotFound::is);
+        UserProfileDetails userProfileDetails = new UserProfileDetails(userProfile);
+
+        return Mono.just(userProfileDetails);
     }
 }
