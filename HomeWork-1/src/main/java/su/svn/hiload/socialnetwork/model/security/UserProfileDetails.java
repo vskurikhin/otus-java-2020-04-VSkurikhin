@@ -1,8 +1,8 @@
 package su.svn.hiload.socialnetwork.model.security;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import su.svn.hiload.socialnetwork.model.security.UserProfile;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -17,7 +17,8 @@ public class UserProfileDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList((GrantedAuthority) () -> "USERS");
+        SimpleGrantedAuthority grantedAuthority = new SimpleGrantedAuthority("ROLE_USER");
+        return Collections.singletonList(grantedAuthority);
     }
 
     @Override
@@ -49,4 +50,6 @@ public class UserProfileDetails implements UserDetails {
     public boolean isEnabled() {
         return ! userProfile.isExpired();
     }
+
+
 }

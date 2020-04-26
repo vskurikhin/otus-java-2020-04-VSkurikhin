@@ -10,7 +10,6 @@ application:
       host: ${DB_HOST:localhost}
       database: "db"
   security:
-    rememberKey: "RememberMeApplicationKey"
     strength: 12
 
 logging:
@@ -25,3 +24,11 @@ server:
 spring:
   liquibase:
     enabled: false
+  thymeleaf:
+    reactive:
+      max-chunk-size: 8192
+    enabled: true
+    encoding: UTF-8
+    mode: HTML
+    prefix: classpath:/templates/
+    suffix: .html

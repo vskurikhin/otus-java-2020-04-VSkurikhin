@@ -1,4 +1,4 @@
-package su.svn.hiload.socialnetwork.dao;
+package su.svn.hiload.socialnetwork.dao.jdbc;
 
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 
