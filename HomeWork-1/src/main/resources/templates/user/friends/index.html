@@ -16,17 +16,22 @@
         <div id="title">
             <h1>Архитектор высоких нагрузок. Задание 1 "Социальная сеть".</h1>
         </div>
-
-    <div th:with="test=0"></div>
-
-    <div>
-        <a id="href-registration" href="/registration.html">registration</a>
+        <table id="allMovies" class="table table-striped">
+            <thead>
+            <tr>
+                <th width="70%">Name</th>
+                <th>Score</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="result" data-th-each="user: ${users}">
+                <td>[[${user.login}]]</td>
+                <td>[[${user.id}]]</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
-    <script sec:authorize="isAuthenticated()">
-        document.getElementById("href-registration").style.pointerEvents = "none";
-        document.getElementById("href-registration").style.cursor = "default";
-        document.getElementById("href-registration").style.display = "none";
-    </script>
+
     <div sec:authorize="isAuthenticated()">
         <a href="/logout">logout</a>
     </div>

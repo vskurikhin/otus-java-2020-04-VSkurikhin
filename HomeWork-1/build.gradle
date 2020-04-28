@@ -5,11 +5,6 @@ buildscript {
     dependencies {
         classpath "gradle.plugin.com.avast.gradle:gradle-docker-compose-plugin:0.9.5"
         classpath "io.spring.gradle:dependency-management-plugin:1.0.9.RELEASE"
-        classpath("org.liquibase:liquibase-gradle-plugin:$liquibase_gradle_plugin") {
-            exclude(module: 'liquibase-core') // exclude the dependency on liquibase-core:3.6.3
-        }
-        classpath("org.liquibase:liquibase-core:$liquibase")
-        classpath('mysql:mysql-connector-java:8.0.19')
     }
 }
 
@@ -17,7 +12,6 @@ plugins {
     id 'org.springframework.boot' version '2.3.0.M4'
     id 'io.spring.dependency-management' version '1.0.9.RELEASE'
     id 'java'
-    id 'org.liquibase.gradle' version '2.0.2'
 }
 
 group = 'su.svn'
@@ -35,11 +29,12 @@ repositories {
     maven { url 'https://repo.spring.io/milestone' }
 }
 
+static def getEnv(key, defaultValue) {
+    return System.getenv(key) ?: defaultValue
+}
+
 ext.libVers = [
-        liquibase               : getEnv('VERSION_ORG_LIQUIBASE', VERSION_ORG_LIQUIBASE),
-        liquibase_gradle_plugin : getEnv('VERSION_LIQUIBASE_GRADLE_PLUGIN', VERSION_LIQUIBASE_GRADLE_PLUGIN),
-        liquibase_groovy_dsl    : getEnv('VERSION_LIQUIBASE_GROOVY_DSL', VERSION_LIQUIBASE_GROOVY_DSL),
-        mysql_connector_java    : getEnv('VERSHIN_MYSQL_CONNECTOR_JAVA', VERSHIN_MYSQL_CONNECTOR_JAVA),
+        mysql_connector_java    : getEnv('VERSHIN_MYSQL_CONNECTOR_JAVA', VERSION_MYSQL_CONNECTOR_JAVA),
         projectlombok           : getEnv('VERSION_PROJECTLOMBOK', VERSION_PROJECTLOMBOK),
         slf4j                   : getEnv('VERSION_ORG_SLF4J_VERSION', VERSION_ORG_SLF4J_VERSION),
         logback                 : '1.2.3',
@@ -47,10 +42,9 @@ ext.libVers = [
 
 dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-api', version: libVers.slf4j
-
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-logging'
@@ -62,40 +56,11 @@ dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: libVers.projectlombok
     annotationProcessor 'org.projectlombok:lombok'
 
-    liquibaseRuntime group: 'org.liquibase', name: 'liquibase-core', version: libVers.liquibase
-    liquibaseRuntime group: 'org.liquibase', name: 'liquibase-gradle-plugin', version: libVers.liquibase_gradle_plugin
-    liquibaseRuntime group: 'org.liquibase', name: 'liquibase-groovy-dsl', version: libVers.liquibase_groovy_dsl
-    liquibaseRuntime group: 'mysql', name: 'mysql-connector-java', version: libVers.mysql_connector_java
-    liquibaseRuntime group: 'ch.qos.logback', name: 'logback-core', version: libVers.logback
-    liquibaseRuntime group: 'ch.qos.logback', name: 'logback-classic', version: libVers.logback
-
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.springframework.security:spring-security-test'
-}
-
-static def getEnv(key, defaultValue) {
-    return System.getenv(key) ?: defaultValue
-}
-
-def db_password = getEnv('DBPASS', DATABASE_PASSWORD)
-def db_url = getEnv('DBURL', DATABASE_URL)
-def db_username = getEnv('DBUSER', DATABASE_USERNAME)
-def db_url_db = db_url + '?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC'
-def run_list = project.properties['runList'] ?: 'db_db'
-
-liquibase {
-    activities {
-        db_db {
-            changeLogFile "src/main/db/Change_Log.xml"
-            url db_url_db
-            username db_username
-            password db_password
-        }
-    }
-    runList = run_list
 }
 
 test {

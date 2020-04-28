@@ -20,7 +20,7 @@ public class UserProfileDetailsService implements ReactiveUserDetailsService {
 
     @Override
     public Mono<UserDetails> findByUsername(String username) {
-        UserProfile userProfile= userProfileDao.findByLogin(username).orElseThrow(NotFound::is);
+        UserProfile userProfile= userProfileDao.readLogin(username).orElseThrow(NotFound::is);
         UserProfileDetails userProfileDetails = new UserProfileDetails(userProfile);
 
         return Mono.just(userProfileDetails);

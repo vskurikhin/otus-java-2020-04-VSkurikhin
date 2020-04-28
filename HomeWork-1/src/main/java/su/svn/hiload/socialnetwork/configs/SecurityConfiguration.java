@@ -22,7 +22,7 @@ public class SecurityConfiguration {
         return http
                 .csrf().disable()
                 .authorizeExchange()
-                .pathMatchers("/", "/index.html", "/login", "/logout").permitAll()
+                .pathMatchers("/", "/index.html", "/register", "/registration.html", "/login", "/logout").permitAll()
                 .pathMatchers("/i18n/**",
                         "/css/**",
                         "/fonts/**",
@@ -39,7 +39,6 @@ public class SecurityConfiguration {
                 .and()
                 .build();
     }
-
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
