@@ -12,4 +12,4 @@ pluginManagement {
 	}
 }
 
-include 'HomeWork-1'
+include 'database', 'HomeWork-1'

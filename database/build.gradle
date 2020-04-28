@@ -1,0 +1,61 @@
+buildscript {
+    def liquibase_gradle_plugin = System.getProperty('VERSION_LIQUIBASE_GRADLE_PLUGIN') ?: VERSION_LIQUIBASE_GRADLE_PLUGIN
+    def liquibase = System.getProperty('VERSION_ORG_LIQUIBASE') ?: VERSION_ORG_LIQUIBASE
+
+    dependencies {
+        classpath "gradle.plugin.com.avast.gradle:gradle-docker-compose-plugin:0.9.5"
+        classpath("org.liquibase:liquibase-gradle-plugin:$liquibase_gradle_plugin") {
+            exclude(module: 'liquibase-core') // exclude the dependency on liquibase-core:3.6.3
+        }
+        classpath("org.liquibase:liquibase-core:$liquibase")
+        classpath('mysql:mysql-connector-java:8.0.19')
+    }
+}
+
+plugins {
+    id 'java'
+    id 'org.liquibase.gradle' version '2.0.2'
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
+static def getEnv(key, defaultValue) {
+    return System.getenv(key) ?: defaultValue
+}
+
+ext.libVers = [
+        liquibase               : getEnv('VERSION_ORG_LIQUIBASE', VERSION_ORG_LIQUIBASE),
+        liquibase_gradle_plugin : getEnv('VERSION_LIQUIBASE_GRADLE_PLUGIN', VERSION_LIQUIBASE_GRADLE_PLUGIN),
+        liquibase_groovy_dsl    : getEnv('VERSION_LIQUIBASE_GROOVY_DSL', VERSION_LIQUIBASE_GROOVY_DSL),
+        mysql_connector_java    : getEnv('VERSION_MYSQL_CONNECTOR_JAVA', VERSION_MYSQL_CONNECTOR_JAVA),
+]
+
+dependencies {
+    liquibaseRuntime group: 'org.liquibase', name: 'liquibase-core', version: libVers.liquibase
+    liquibaseRuntime group: 'org.liquibase', name: 'liquibase-gradle-plugin', version: libVers.liquibase_gradle_plugin
+    liquibaseRuntime group: 'org.liquibase', name: 'liquibase-groovy-dsl', version: libVers.liquibase_groovy_dsl
+    liquibaseRuntime group: 'mysql', name: 'mysql-connector-java', version: libVers.mysql_connector_java
+    liquibaseRuntime group: 'ch.qos.logback', name: 'logback-core', version: libVers.logback
+    liquibaseRuntime group: 'ch.qos.logback', name: 'logback-classic', version: libVers.logback
+}
+
+def db_password = getEnv('DBPASS', DATABASE_PASSWORD)
+def db_url = getEnv('DBURL', DATABASE_URL)
+def db_username = getEnv('DBUSER', DATABASE_USERNAME)
+def db_url_db = db_url + '?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC'
+def run_list = project.properties['runList'] ?: 'db_db'
+
+liquibase {
+    activities {
+        db_db {
+            changeLogFile "database/Change_Log.xml"
+            url db_url_db
+            username db_username
+            password db_password
+        }
+    }
+    runList = run_list
+}

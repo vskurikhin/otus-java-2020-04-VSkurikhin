@@ -5,7 +5,10 @@ import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 
 public interface UserProfileDao {
-    Mono<UserProfile> findByLogin(String login);
 
-    Flux<UserProfile> findAll();
+    Mono<Integer> create(UserProfile userProfile);
+
+    Mono<UserProfile> readLogin(String login);
+
+    Flux<UserProfile> readAll();
 }
