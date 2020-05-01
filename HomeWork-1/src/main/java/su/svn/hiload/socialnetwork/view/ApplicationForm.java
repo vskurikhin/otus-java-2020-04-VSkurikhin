@@ -91,4 +91,17 @@ public class ApplicationForm {
     public void setInterests(List<Interest> interests) {
         this.interests = interests;
     }
+
+    @Override
+    public String toString() {
+        return "ApplicationForm{" +
+                "username='" + username + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", surName='" + surName + '\'' +
+                ", age=" + age +
+                ", sex='" + sex + '\'' +
+                ", city='" + city + '\'' +
+                ", interests=" + interests +
+                '}';
+    }
 }

@@ -8,7 +8,7 @@ public enum Sex {
 
     private final String value;
 
-    private Sex(String displayValue, String sex) {
+    Sex(String displayValue, String sex) {
         this.displayValue = displayValue;
         this.value = sex;
     }

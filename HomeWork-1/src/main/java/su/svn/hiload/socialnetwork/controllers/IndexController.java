@@ -15,14 +15,28 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.thymeleaf.spring5.context.webflux.IReactiveDataDriverContextVariable;
 import org.thymeleaf.spring5.context.webflux.ReactiveDataDriverContextVariable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import su.svn.hiload.socialnetwork.dao.jdbc.UserInfoDao;
+import su.svn.hiload.socialnetwork.dao.jdbc.UserInterestDao;
+import su.svn.hiload.socialnetwork.dao.jdbc.UserProfileDao;
 import su.svn.hiload.socialnetwork.exceptions.NotFound;
 import su.svn.hiload.socialnetwork.model.UserInfo;
+import su.svn.hiload.socialnetwork.model.UserInterest;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
+import su.svn.hiload.socialnetwork.view.Interest;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Controller
 public class IndexController {
@@ -31,25 +45,29 @@ public class IndexController {
 
     private BCryptPasswordEncoder encoder;
 
-    private final su.svn.hiload.socialnetwork.dao.jdbc.UserInfoDao userInfoJdbcDao;
-
     private final su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoDao userInfoR2dbcDao;
 
-    private final su.svn.hiload.socialnetwork.dao.jdbc.UserProfileDao userProfileJdbcDao;
+    private final su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestDao userInterestR2dbcDao;
 
-    private final su.svn.hiload.socialnetwork.dao.r2dbc.UserProfileDao userProfileR2dbcDao;
+    private final UserInfoDao userInfoJdbcDao;
+
+    private final UserInterestDao userInterestJdbcDao;
+
+    private final UserProfileDao userProfileJdbcDao;
 
     public IndexController(
             @Value("${application.security.strength}") int strength,
-            @Qualifier("userInfoJdbcDao") su.svn.hiload.socialnetwork.dao.jdbc.UserInfoDao userInfoJdbcDao,
-            @Qualifier("userInfoR2dbcDao") su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoDao userInfoR2dbcDao,
-            @Qualifier("userProfileJdbcDao") su.svn.hiload.socialnetwork.dao.jdbc.UserProfileDao userProfileJdbcDao,
-            @Qualifier("userProfileR2dbcDao") su.svn.hiload.socialnetwork.dao.r2dbc.UserProfileDao userProfileR2dbcDao) {
+            su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoDao userInfoR2dbcDao,
+            @Qualifier("userInterestDao") su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestDao userInterestR2dbcDao,
+            UserInfoDao userInfoJdbcDao,
+            UserInterestDao userInterestJdbcDao,
+            UserProfileDao userProfileJdbcDao) {
         this.encoder = new BCryptPasswordEncoder(strength);
         this.userInfoJdbcDao = userInfoJdbcDao;
         this.userInfoR2dbcDao = userInfoR2dbcDao;
+        this.userInterestJdbcDao = userInterestJdbcDao;
+        this.userInterestR2dbcDao = userInterestR2dbcDao;
         this.userProfileJdbcDao = userProfileJdbcDao;
-        this.userProfileR2dbcDao = userProfileR2dbcDao;
     }
 
     @RequestMapping("/")
@@ -108,13 +126,34 @@ public class IndexController {
     }
 
     private void fillApplicationForm(ApplicationForm form, long id) {
-        userInfoJdbcDao.readById(id).ifPresentOrElse(userInfo -> {
+        CompletableFuture<List<UserInterest>> interestCompletableFuture = runUserInterestCompletableFuture(id);
+        userInfoJdbcDao.readById(id).ifPresentOrElse(getUserInfoConsumer(form), NotFound::is);
+        try {
+            List<Interest> interest = interestCompletableFuture.get().stream()
+                    .map(userInterest -> new Interest(userInterest.getId(), userInterest.getInterest()))
+                    .collect(Collectors.toList());
+            form.setInterests(interest);
+        } catch (InterruptedException | ExecutionException e) {
+            LOG.error("fillApplicationForm ", e);
+        }
+    }
+
+    private CompletableFuture<List<UserInterest>> runUserInterestCompletableFuture(long id) {
+        return CompletableFuture.supplyAsync(getListUserInterestSupplier(id));
+    }
+
+    private Supplier<List<UserInterest>> getListUserInterestSupplier(long id) {
+        return () -> userInterestJdbcDao.readAllByUserInfoId(id);
+    }
+
+    private Consumer<UserInfo> getUserInfoConsumer(ApplicationForm form) {
+        return userInfo -> {
             form.setFirstName(userInfo.getFirstName());
             form.setSurName(userInfo.getSurName());
             form.setAge(userInfo.getAge());
             form.setSex(userInfo.getSex());
             form.setCity(userInfo.getCity());
-        }, NotFound::is);
+        };
     }
 
     @PostMapping("/user/application")
@@ -134,6 +173,7 @@ public class IndexController {
     }
 
     private void userApplication(ApplicationForm form, UserProfile userProfile) {
+        System.err.println("form = " + form);
 
         UserInfo userInfo = new UserInfo();
         userInfo.setId(userProfile.getId());
@@ -148,17 +188,58 @@ public class IndexController {
         } else {
             userInfoJdbcDao.create(userInfo);
         }
+        if (form.getInterests() != null) {
+            List<UserInterest> userInterests = form.getInterests().stream()
+                    .filter(Objects::nonNull)
+                    .filter(interest -> interest.getId() == null)
+                    .filter(interest -> interest.getInterest() != null)
+                    .map(interest -> createUserInterest(interest, userProfile.getId()))
+                    .collect(Collectors.toList());
+            userInterestJdbcDao.createBatch(userInterests);
+        }
+    }
+
+    private UserInterest createUserInterest(Interest interest, long id) {
+        System.err.println("interest = " + interest);
+        return new UserInterest(interest.getId(), id, interest.getInterest());
     }
 
     @RequestMapping("/user/friends")
-    public String userIndexFriends(final Model model) {
-        model.addAttribute("users", getUsers());
+    public String userIndexFriends(@AuthenticationPrincipal UserDetails user, final Model model) {
+        Optional<Long> optionalId = userProfileJdbcDao.readIdByLogin(user.getUsername());
+        if (optionalId.isPresent()) {
+            model.addAttribute("friends", getFriends());
+
+        } else {
+            model.addAttribute("friends", createReactiveDataDriverContextVariableFluxEmpty());
+        }
 
         return "user/friends/index";
     }
 
-    private IReactiveDataDriverContextVariable getUsers() {
-        return new ReactiveDataDriverContextVariable(userProfileR2dbcDao.readAll(), 1);
+    private IReactiveDataDriverContextVariable getFriends() {
+        return new ReactiveDataDriverContextVariable(userInfoR2dbcDao.readAll(), 1);
+    }
+
+    @RequestMapping("/user/interest")
+    public String userInterest(@AuthenticationPrincipal UserDetails user, final Model model) {
+        Optional<Long> optionalId = userProfileJdbcDao.readIdByLogin(user.getUsername());
+        if (optionalId.isPresent()) {
+            model.addAttribute("interest", getInterests(optionalId.get()));
+
+        } else {
+            model.addAttribute("interest", createReactiveDataDriverContextVariableFluxEmpty());
+        }
+
+        return "user/friends/index";
+    }
+
+    private IReactiveDataDriverContextVariable createReactiveDataDriverContextVariableFluxEmpty() {
+        return new ReactiveDataDriverContextVariable(Flux.empty(), 1);
+    }
+
+    private IReactiveDataDriverContextVariable getInterests(long id) {
+        return new ReactiveDataDriverContextVariable(userInterestR2dbcDao.readAllByUserInfoId(id), 1);
     }
 
     @GetMapping("/error")

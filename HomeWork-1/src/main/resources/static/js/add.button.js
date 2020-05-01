@@ -8,9 +8,11 @@ let addRow = function () {
 
     fieldsNames.forEach((fieldName) => {
         let col = document.createElement('div');
-        col.classList.add('col', 'form-group');
         if (fieldName === 'id') {
-            col.classList.add('d-none'); // field with id - hidden
+            col.classList.add('hidden'); // field with id - hidden
+            col.classList.add('col-md-6', 'form-group');
+        } else {
+            col.classList.add('col-md-4', 'form-group');
         }
 
         let input = document.createElement('input');

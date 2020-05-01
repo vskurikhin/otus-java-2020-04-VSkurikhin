@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link data-th-href="@{/css/bootstrap.min.css}" rel="stylesheet">
     <link data-th-href="@{/css/main.css}" rel="stylesheet">
+    <script type="text/javascript" th:src="@{/js/jquery-3.5.0.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/fetch.interests.js}"></script>
 </head>
 <body>
 
@@ -19,22 +21,39 @@
         <table id="allMovies" class="table table-striped">
             <thead>
             <tr>
-                <th width="70%">Name</th>
-                <th>Score</th>
+                <th width="20%">First name</th>
+                <th width="20%">Sur name</th>
+                <th width="5%">Age</th>
+                <th width="5%">Sex</th>
+                <th width="12%">City</th>
+                <th>Interest</th>
             </tr>
             </thead>
             <tbody>
-            <tr class="result" data-th-each="user: ${users}">
-                <td>[[${user.login}]]</td>
-                <td>[[${user.id}]]</td>
+            <tr class="result" data-th-each="user: ${friends}">
+                <td>[[${user.firstName}]]</td>
+                <td>[[${user.surName}]]</td>
+                <td>[[${user.age}]]</td>
+                <td>[[${user.sex}]]</td>
+                <td>[[${user.city}]]</td>
+                <td>
+                    <div th:id="'interest-' + ${user.id}"></div>
+                    <div hidden="hidden">[[${user.id}]]
+                        <script>findAllInterest([[${user.id}]]);</script>
+                    </div></td>
             </tr>
             </tbody>
         </table>
     </div>
 
-    <div sec:authorize="isAuthenticated()">
-        <a href="/logout">logout</a>
-    </div>
+
+    <form sec:authorize="isAuthenticated()" class="form-application" method="get" action="/user/application">
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Home page</button>
+    </form>
+
+    <form sec:authorize="isAuthenticated()" class="form-application" method="post" action="/logout">
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Logout</button>
+    </form>
 
 </div>
 </body>
