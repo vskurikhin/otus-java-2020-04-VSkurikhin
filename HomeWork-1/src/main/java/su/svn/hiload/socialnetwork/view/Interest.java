@@ -2,7 +2,7 @@ package su.svn.hiload.socialnetwork.view;
 
 public class Interest {
 
-    private long id;
+    private Long id;
 
     private String interest;
 
@@ -13,11 +13,11 @@ public class Interest {
         this.interest = interest;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -27,5 +27,13 @@ public class Interest {
 
     public void setInterest(String interest) {
         this.interest = interest;
+    }
+
+    @Override
+    public String toString() {
+        return "Interest{" +
+                "id=" + id +
+                ", interest='" + interest + '\'' +
+                '}';
     }
 }

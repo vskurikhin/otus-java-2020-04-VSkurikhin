@@ -49,26 +49,24 @@
                        th:value="${form.city}">
             </p>
 
+            <button type="button" class="btn btn-sm btn-primary btn-success" onclick="addRow()">Add row of interest</button>
             <!--LIST OF INTERESTS-->
-            <div id="interestList">
+            <div id="interestList" class="col-md-12">
                 <div class="row">
-                    <div class="col-md-8 form-group">Interest</div>
-                    <div class="col-md-4 form-group hidden">id</div>
+                    <div class="col-md-6 form-group">Interest</div>
+                    <div class="col-md-4 form-group hidden" hidden="hidden">id</div>
                 </div>
-                <div class="row item" th:each="interest, status : ${form.interests}">
-                    <div class="col-md-8 form-group">
-                        <input th:field="*{interests[__${status.index}__].interest}" type="text" class="form-control">
+                <div class="row item" th:each="interest : ${form.interests}">
+                    <div class="col-md-6 form-group">
+                        <input th:value="${interest.interest}" type="text" class="form-control">
                     </div>
-                    <div class="col-md-4 form-group hidden">
-                        <input th:field="*{interests[__${status.index}__].id}" type="text" class="form-control">
+                    <div class="col-md-4 form-group hidden" hidden="hidden">
+                        <input th:value="${interest.id}" type="text" class="form-control" hidden="hidden">
                     </div>
                 </div>
             </div>
 
-            <button type="button" class="btn btn-sm btn-primary btn-success" onclick="addRow()">Add row of interest
-            </button>
-
-            <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Friends</button>
         </form>
 
         <form sec:authorize="isAuthenticated()" class="form-application" method="post" action="/logout">

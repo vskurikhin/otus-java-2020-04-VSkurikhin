@@ -13,6 +13,8 @@ import org.springframework.data.r2dbc.core.ReactiveDataAccessStrategy;
 import org.springframework.data.r2dbc.dialect.MySqlDialect;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
+import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestR2DbcDao;
 
 import java.time.Duration;
 
@@ -58,5 +60,10 @@ public class R2dbcConfiguration {
     @Bean
     public R2dbcRepositoryFactory factory(DatabaseClient client, ReactiveDataAccessStrategy strategy) {
         return new R2dbcRepositoryFactory(client, strategy);
+    }
+
+    @Bean("userInterestDao")
+    public UserInterestDao departmentDao(R2dbcRepositoryFactory factory, UserInterestR2DbcDao userInterestR2DbcDao) {
+        return factory.getRepository(UserInterestDao.class, userInterestR2DbcDao);
     }
 }
