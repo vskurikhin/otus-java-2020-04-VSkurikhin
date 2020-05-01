@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link data-th-href="@{/css/bootstrap.min.css}" rel="stylesheet">
     <link data-th-href="@{/css/main.css}" rel="stylesheet">
+    <script type="text/javascript" th:src="@{/js/opportunity-of.js}"></script>
 </head>
 <body>
 
@@ -17,18 +18,22 @@
             <h1>Архитектор высоких нагрузок. Задание 1 "Социальная сеть".</h1>
         </div>
 
-    <div th:with="test=0"></div>
+        <form sec:authorize="isAuthenticated()" class="form-application" method="get" action="/user/application">
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Home page</button>
+        </form>
 
-    <div>
-        <a id="href-registration" href="/registration.html">registration</a>
-    </div>
-    <script sec:authorize="isAuthenticated()">
-        document.getElementById("href-registration").style.pointerEvents = "none";
-        document.getElementById("href-registration").style.cursor = "default";
-        document.getElementById("href-registration").style.display = "none";
-    </script>
-    <div sec:authorize="isAuthenticated()">
-        <a href="/logout">logout</a>
+        <form class="form-registration" id="registration" method="get" action="/registration.html">
+            <button class="btn btn-lg btn-primary btn-block" type="submit" >Registration</button>
+        </form>
+        <!-- script sec:authorize="isAuthenticated()">
+            document.getElementById("href-registration").style.pointerEvents = "none";
+            document.getElementById("href-registration").style.cursor = "default";
+            document.getElementById("href-registration").style.display = "none";
+        </script -->
+
+        <form sec:authorize="isAuthenticated()" class="form-application" method="post" action="/logout">
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Logout</button>
+        </form>
     </div>
 
 </div>

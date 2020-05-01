@@ -6,7 +6,11 @@ import java.util.Optional;
 
 public interface UserInfoDao {
 
-    int create(UserInfo userProfile);
+    int create(UserInfo userInfo);
 
     Optional<UserInfo> readById(long id);
+
+    boolean existsById(long id);
+
+    int update(UserInfo userInfo);
 }

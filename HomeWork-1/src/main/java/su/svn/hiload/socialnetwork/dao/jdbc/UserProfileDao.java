@@ -9,4 +9,6 @@ public interface UserProfileDao {
     int create(UserProfile userProfile);
 
     Optional<UserProfile> readLogin(String login);
+
+    Optional<Long> readIdByLogin(String login);
 }
