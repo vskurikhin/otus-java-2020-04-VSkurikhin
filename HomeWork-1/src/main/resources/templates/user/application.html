@@ -1,0 +1,80 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link data-th-href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link data-th-href="@{/css/main.css}" rel="stylesheet">
+    <script type="text/javascript" th:src="@{/js/add.button.js}"></script>
+</head>
+<body>
+
+<div  class="container">
+    <div id="title">
+        <h1>Архитектор высоких нагрузок. Задание 1 "Социальная сеть".</h1>
+
+        <form class="form-application" method="post" action="/user/application">
+            <h2 class="form-application-heading">Application form</h2>
+            <p>
+                <label for="username" class="sr-only">Username</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Username" required=""
+                       autofocus="" readonly th:value="${username}">
+            </p>
+            <p>
+                <label for="firstName" class="sr-only">First name</label>
+                <input type="text" id="firstName" name="firstName" class="form-control" placeholder="First Name"
+                       required="" th:value="${form.firstName}">
+            </p>
+            <p>
+                <label for="surName" class="sr-only">First name</label>
+                <input type="text" id="surName" name="surName" class="form-control" placeholder="Sur Name" required=""
+                       th:value="${form.surName}">
+            </p>
+            <p>
+                <label for="age" class="sr-only">Age</label>
+                <input type="text" id="age" name="age" class="form-control" placeholder="Age" required=""
+                       th:value="${form.age}">
+            </p>
+            <p>
+                <select name="sex">
+                    <option th:each="sexOpt : ${T(su.svn.hiload.socialnetwork.model.Sex).values()}"
+                            th:value="${sexOpt}" th:text="${sexOpt.displayValue}"></option>
+                </select>
+            </p>
+            <p>
+                <label for="city" class="sr-only">City</label>
+                <input type="text" id="city" name="city" class="form-control" placeholder="City" required=""
+                       th:value="${form.city}">
+            </p>
+
+            <!--LIST OF INTERESTS-->
+            <div id="interestList">
+                <div class="row">
+                    <div class="col-md-8 form-group">Interest</div>
+                    <div class="col-md-4 form-group hidden">id</div>
+                </div>
+                <div class="row item" th:each="interest, status : ${form.interests}">
+                    <div class="col-md-8 form-group">
+                        <input th:field="*{interests[__${status.index}__].interest}" type="text" class="form-control">
+                    </div>
+                    <div class="col-md-4 form-group hidden">
+                        <input th:field="*{interests[__${status.index}__].id}" type="text" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-sm btn-primary btn-success" onclick="addRow()">Add row of interest
+            </button>
+
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
+        </form>
+
+        <form sec:authorize="isAuthenticated()" class="form-application" method="post" action="/logout">
+            <button class="btn btn-lg btn-primary btn-block" type="submit">Logout</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

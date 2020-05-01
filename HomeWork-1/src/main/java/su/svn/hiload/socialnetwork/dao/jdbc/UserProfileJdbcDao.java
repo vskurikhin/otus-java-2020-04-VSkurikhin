@@ -1,5 +1,7 @@
 package su.svn.hiload.socialnetwork.dao.jdbc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -13,7 +15,11 @@ import java.util.Optional;
 @Service("userProfileJdbcDao")
 public class UserProfileJdbcDao implements UserProfileDao {
 
+    private static final Logger LOG = LoggerFactory.getLogger(UserProfileJdbcDao.class);
+
     private final static String READ_LOGIN = "SELECT id, login, hash, expired, locked FROM user_profile WHERE login = :login";
+
+    private final static String READ_ID_BY_LOGIN = "SELECT id FROM user_profile WHERE login = :login";
 
     private final static String CREATE = "INSERT INTO user_profile (login, hash, expired, locked) VALUES (:login, :hash, :expired, :locked)";
 
@@ -26,17 +32,41 @@ public class UserProfileJdbcDao implements UserProfileDao {
 
     @Override
     public int create(UserProfile userProfile) {
-        SqlParameterSource namedParameters = new BeanPropertySqlParameterSource(userProfile);
-        return jdbcTemplate.update(CREATE, namedParameters);
+        try {
+            SqlParameterSource namedParameters = new BeanPropertySqlParameterSource(userProfile);
+            return jdbcTemplate.update(CREATE, namedParameters);
+        } catch (Exception e) {
+            LOG.error("create ", e);
+        }
+        return 0;
     }
 
     @Override
     public Optional<UserProfile> readLogin(String login) {
+        try {
+            UserProfile userProfile = new UserProfile();
+            userProfile.setLogin(login);
+            SqlParameterSource namedParameters = new BeanPropertySqlParameterSource(userProfile);
+            UserProfile result = jdbcTemplate.queryForObject(READ_LOGIN, namedParameters, new UserProfileRowMapper());
+
+            return result != null ? Optional.of(result) : Optional.empty();
+        } catch (Exception e) {
+            LOG.error("readLogin ", e);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Long> readIdByLogin(String login) {
         UserProfile userProfile = new UserProfile();
         userProfile.setLogin(login);
-        SqlParameterSource namedParameters = new BeanPropertySqlParameterSource(userProfile);
-        UserProfile result = jdbcTemplate.queryForObject(READ_LOGIN, namedParameters, new UserProfileRowMapper());
-
-        return result != null ? Optional.of(result) : Optional.empty();
+        try {
+            SqlParameterSource namedParameters = new BeanPropertySqlParameterSource(userProfile);
+            Long result = jdbcTemplate.queryForObject(READ_ID_BY_LOGIN, namedParameters, Long.class);
+            return result != null ? Optional.of(result) : Optional.empty();
+        } catch (Exception e) {
+            LOG.error("readIdByLogin ", e);
+        }
+        return Optional.empty();
     }
 }

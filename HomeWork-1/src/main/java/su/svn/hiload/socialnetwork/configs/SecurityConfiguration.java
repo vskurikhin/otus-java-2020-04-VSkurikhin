@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import su.svn.hiload.socialnetwork.services.security.AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -29,11 +30,13 @@ public class SecurityConfiguration {
                         "/img/**",
                         "/js/**",
                         "/webjars/**").permitAll()
+                .pathMatchers("/application").hasRole("USER")
                 .pathMatchers("/user/**").hasRole("USER")
                 .anyExchange()
                 .authenticated()
                 .and()
                 .formLogin()
+                .authenticationSuccessHandler(new AuthenticationSuccessHandler())
                 .and()
                 .logout()
                 .and()
