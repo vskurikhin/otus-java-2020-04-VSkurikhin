@@ -24,15 +24,15 @@ spring:
     url: ${JDBC_DATABASE_URL:jdbc:mysql://localhost/db?reconnect=true}?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     hikari:
       connection-timeout: 30000
-      maximum-pool-size: 20
+      maximum-pool-size: 10
   liquibase:
     enabled: false
   profiles.active: production
   r2dbc:
     pool:
       enabled: true
-      initial-size: 10
-      max-size: 20
+      initial-size: 5
+      max-size: 10
   thymeleaf:
     reactive:
       max-chunk-size: 8192
