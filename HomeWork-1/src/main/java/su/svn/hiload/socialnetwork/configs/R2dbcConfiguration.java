@@ -18,6 +18,7 @@ import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestR2DbcDao;
 
 import java.time.Duration;
 
+import static io.r2dbc.pool.PoolingConnectionFactoryProvider.*;
 import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 
 @Configuration
@@ -27,8 +28,20 @@ public class R2dbcConfiguration {
     @Value("${application.db.r2dbc.host}")
     private String dbHost;
 
+    @Value("${application.db.r2dbc.port}")
+    private int dbPort;
+
     @Value("${application.db.r2dbc.database}")
     private String dbName;
+
+    @Value("${spring.r2dbc.pool.acquire-retry:3}")
+    private int acquireRetry;
+
+    @Value("${spring.r2dbc.pool.initial-size:10}")
+    private int initialSize;
+
+    @Value("${spring.r2dbc.pool.max-size:10}")
+    private int maxSize;
 
     @Value("${application.db.username}")
     private String dbUser;
@@ -39,10 +52,26 @@ public class R2dbcConfiguration {
     @Bean
     public ConnectionFactory connectionFactory() {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+                .option(DRIVER, "pool")
+                .option(PROTOCOL, "mysql")
+                .option(HOST, dbHost)
+                .option(PORT, dbPort)
+                .option(USER, dbUser)
+                .option(PASSWORD, dbPassword)
+                .option(DATABASE, dbName)
+                .option(ACQUIRE_RETRY, acquireRetry)
+                .option(INITIAL_SIZE, initialSize)
+                .option(MAX_SIZE, maxSize)
+                .build();
+        return ConnectionFactories.get(options);
+    }
+
+    public ConnectionFactory connectionFactoryNoPool() {
+        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
                 .option(HOST, dbHost)
+                .option(PORT, dbPort)
                 .option(USER, dbUser)
-                .option(PORT, 3306)
                 .option(PASSWORD, dbPassword)
                 .option(DATABASE, dbName)
                 .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout

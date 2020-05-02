@@ -1,6 +1,8 @@
 package su.svn.hiload.socialnetwork.configs;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
@@ -11,16 +13,19 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.AbstractTransactionManagementConfiguration;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
 
 @Configuration
+@ConditionalOnClass({ JdbcTemplate.class, PlatformTransactionManager.class })
 public class JdbcConfiguration {
 
-    @Value("${application.db.jdbc.url}")
+    @Value("${spring.datasource.url}")
     private String dbUrl;
 
-    @Value("${application.db.jdbc.driver}")
+    @Value("${spring.datasource.driver-class-name}")
     private String dbDriver;
 
     @Value("${init-db:false}")
@@ -31,7 +36,6 @@ public class JdbcConfiguration {
 
     @Value("${application.db.password}")
     private String dbPassword;
-
 
     @Bean
     public static PropertySourcesPlaceholderConfigurer placeHolderConfigurer() {
@@ -44,9 +48,15 @@ public class JdbcConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(name = "transactionManager")
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }
+
+    @ConditionalOnMissingBean(AbstractTransactionManagementConfiguration.class)
+    @Configuration
+    @EnableTransactionManagement
+    protected static class TransactionManagementConfiguration { }
 
     @Bean
     public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
