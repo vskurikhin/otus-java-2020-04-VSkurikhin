@@ -10,11 +10,11 @@ import su.svn.hiload.socialnetwork.model.UserInterest;
 
 @RestController
 @RequestMapping("/user/interests")
-public class RestUserInterestsController {
+public class RestUserController {
 
     private final UserInterestDao userInterestDao;
 
-    public RestUserInterestsController(UserInterestDao userInterestDao) {
+    public RestUserController(UserInterestDao userInterestDao) {
         this.userInterestDao = userInterestDao;
     }
 
