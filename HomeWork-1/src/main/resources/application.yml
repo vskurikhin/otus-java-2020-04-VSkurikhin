@@ -1,29 +1,38 @@
 application:
   locale: "en_US"
   db:
-    username: "dbuser"
+    username: ${DB_USER:dbuser}
     password: ${DB_PASS:password}
-    jdbc:
-      driver: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://${DB_HOST:localhost}:3306/db?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     r2dbc:
       host: ${DB_HOST:localhost}
-      database: "db"
+      port: ${DB_PORT:3306}
+      database: ${DB_NAME:db}
   security:
     strength: 12
 
 logging:
   level:
-    org.springframework:
-      web: DEBUG
-      data.r2dbc: DEBUG
+    org.springframework: DEBUG
+    su.svn: TRACE
 
 server:
   port: 18081
 
 spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${JDBC_DATABASE_URL:jdbc:mysql://localhost/db?reconnect=true}?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 20
   liquibase:
     enabled: false
+  profiles.active: production
+  r2dbc:
+    pool:
+      enabled: true
+      initial-size: 10
+      max-size: 20
   thymeleaf:
     reactive:
       max-chunk-size: 8192

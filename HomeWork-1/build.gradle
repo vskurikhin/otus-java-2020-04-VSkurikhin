@@ -1,9 +1,5 @@
 buildscript {
-    def liquibase_gradle_plugin = System.getProperty('VERSION_LIQUIBASE_GRADLE_PLUGIN') ?: VERSION_LIQUIBASE_GRADLE_PLUGIN
-    def liquibase = System.getProperty('VERSION_ORG_LIQUIBASE') ?: VERSION_ORG_LIQUIBASE
-
     dependencies {
-        classpath "gradle.plugin.com.avast.gradle:gradle-docker-compose-plugin:0.9.5"
         classpath "io.spring.gradle:dependency-management-plugin:1.0.9.RELEASE"
     }
 }
@@ -66,3 +62,4 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+

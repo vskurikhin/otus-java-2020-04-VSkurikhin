@@ -173,8 +173,6 @@ public class IndexController {
     }
 
     private void userApplication(ApplicationForm form, UserProfile userProfile) {
-        System.err.println("form = " + form);
-
         UserInfo userInfo = new UserInfo();
         userInfo.setId(userProfile.getId());
         userInfo.setFirstName(form.getFirstName());

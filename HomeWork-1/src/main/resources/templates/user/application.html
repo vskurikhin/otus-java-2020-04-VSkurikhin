@@ -23,16 +23,19 @@
                        autofocus="" readonly th:value="${username}">
             </p>
             <p>
+                <label for="firstName">First name</label>
                 <label for="firstName" class="sr-only">First name</label>
                 <input type="text" id="firstName" name="firstName" class="form-control" placeholder="First Name"
                        required="" th:value="${form.firstName}">
             </p>
             <p>
-                <label for="surName" class="sr-only">First name</label>
+                <label for="surName">Sur name</label>
+                <label for="surName" class="sr-only">Sur name</label>
                 <input type="text" id="surName" name="surName" class="form-control" placeholder="Sur Name" required=""
                        th:value="${form.surName}">
             </p>
             <p>
+                <label for="age">Age</label>
                 <label for="age" class="sr-only">Age</label>
                 <input type="text" id="age" name="age" class="form-control" placeholder="Age" required=""
                        th:value="${form.age}">
@@ -44,6 +47,7 @@
                 </select>
             </p>
             <p>
+                <label for="city">City</label>
                 <label for="city" class="sr-only">City</label>
                 <input type="text" id="city" name="city" class="form-control" placeholder="City" required=""
                        th:value="${form.city}">
@@ -53,12 +57,12 @@
             <!--LIST OF INTERESTS-->
             <div id="interestList" class="col-md-12">
                 <div class="row">
-                    <div class="col-md-6 form-group">Interest</div>
+                    <div class="col-md-6 form-group">Interests:</div>
                     <div class="col-md-4 form-group hidden" hidden="hidden">id</div>
                 </div>
                 <div class="row item" th:each="interest : ${form.interests}">
                     <div class="col-md-6 form-group">
-                        <input th:value="${interest.interest}" type="text" class="form-control">
+                        <input th:value="${interest.interest}" type="text" class="form-control" readonly>
                     </div>
                     <div class="col-md-4 form-group hidden" hidden="hidden">
                         <input th:value="${interest.id}" type="text" class="form-control" hidden="hidden">
