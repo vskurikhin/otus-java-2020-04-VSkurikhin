@@ -19,10 +19,13 @@ public class ReactiveService {
         this.userInterestR2dbcDao = userInterestR2dbcDao;
     }
 
-    public IReactiveDataDriverContextVariable getFriends() {
-        return new ReactiveDataDriverContextVariable(userInfoR2dbcDao.readAll(), 1);
+    public IReactiveDataDriverContextVariable getAllUsers(long id) {
+        return new ReactiveDataDriverContextVariable(userInfoR2dbcDao.readAllUsers(id), 1);
     }
 
+    public IReactiveDataDriverContextVariable getAllFriends(long id) {
+        return new ReactiveDataDriverContextVariable(userInfoR2dbcDao.readAllFriends(id), 1);
+    }
 
     public IReactiveDataDriverContextVariable createReactiveDataDriverContextVariableFluxEmpty() {
         return new ReactiveDataDriverContextVariable(Flux.empty(), 1);

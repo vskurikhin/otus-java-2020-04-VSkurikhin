@@ -86,34 +86,35 @@ public class IndexController {
         }
         blockingService.postUserApplication(form);
         response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
-        response.getHeaders().setLocation(URI.create("/user/friends"));
+        response.getHeaders().setLocation(URI.create("/user/users"));
 
         return response.setComplete();
     }
 
     @RequestMapping("/user/friends")
     public String userIndexFriends(@AuthenticationPrincipal UserDetails user, final Model model) {
-        if (blockingService.readIdByLogin(user.getUsername()) != null) {
-            model.addAttribute("friends", reactiveService.getFriends());
-
+        Long id = null;
+        if ((id = blockingService.readIdByLogin(user.getUsername())) != null) {
+            model.addAttribute("friends", reactiveService.getAllFriends(id));
         } else {
             model.addAttribute("friends", reactiveService.createReactiveDataDriverContextVariableFluxEmpty());
         }
+        model.addAttribute("id", id);
 
         return "user/friends/index";
     }
 
-    @RequestMapping("/user/interest")
-    public String userInterest(@AuthenticationPrincipal UserDetails user, final Model model) {
+    @RequestMapping("/user/users")
+    public String userIndexList(@AuthenticationPrincipal UserDetails user, final Model model) {
         Long id = null;
         if ((id = blockingService.readIdByLogin(user.getUsername())) != null) {
-            model.addAttribute("interest", reactiveService.getInterests(id));
-
+            model.addAttribute("users", reactiveService.getAllUsers(id));
         } else {
-            model.addAttribute("interest", reactiveService.createReactiveDataDriverContextVariableFluxEmpty());
+            model.addAttribute("users", reactiveService.createReactiveDataDriverContextVariableFluxEmpty());
         }
+        model.addAttribute("id", id);
 
-        return "user/friends/index";
+        return "user/users/index";
     }
 
     @GetMapping("/error")

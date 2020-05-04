@@ -9,6 +9,7 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import su.svn.hiload.socialnetwork.services.security.AuthenticationSuccessHandler;
+import su.svn.hiload.socialnetwork.services.security.LogoutSuccessHandler;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -39,6 +40,7 @@ public class SecurityConfiguration {
                 .authenticationSuccessHandler(new AuthenticationSuccessHandler())
                 .and()
                 .logout()
+                .logoutSuccessHandler(new LogoutSuccessHandler())
                 .and()
                 .build();
     }

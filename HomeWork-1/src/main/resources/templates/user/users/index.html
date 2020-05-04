@@ -9,6 +9,7 @@
     <link data-th-href="@{/css/main.css}" rel="stylesheet">
     <script type="text/javascript" th:src="@{/js/jquery-3.5.0.min.js}"></script>
     <script type="text/javascript" th:src="@{/js/fetch.interests.js}"></script>
+    <script type="text/javascript" th:src="@{/js/add-friend.js}"></script>
 </head>
 <body>
 
@@ -27,10 +28,11 @@
                 <th width="5%">Sex</th>
                 <th width="12%">City</th>
                 <th>Interests</th>
+                <th width="12%"></th>
             </tr>
             </thead>
             <tbody>
-            <tr class="result" data-th-each="user: ${friends}">
+            <tr class="result" data-th-each="user: ${users}">
                 <td>[[${user.firstName}]]</td>
                 <td>[[${user.surName}]]</td>
                 <td>[[${user.age}]]</td>
@@ -40,19 +42,24 @@
                     <div th:id="'interest-' + ${user.id}"></div>
                     <div hidden="hidden">[[${user.id}]]
                         <script>findAllInterest([[${user.id}]]);</script>
-                    </div></td>
+                    </div>
+                </td>
+                <td>
+                    <form class="form-application">
+                        <input sec:authorize="isAuthenticated()" th:if="${user.friend}"  th:onclick="'addFriend(' + ${id} + ', ' + ${user.id} + ');'" id="id" type="button" value="Add friend" />
+                    </form>
+                </td>
             </tr>
             </tbody>
         </table>
     </div>
 
-
     <form sec:authorize="isAuthenticated()" class="form-application" method="get" action="/user/application">
         <button class="btn btn-lg btn-primary btn-block" type="submit">Home page</button>
     </form>
 
-    <form sec:authorize="isAuthenticated()" class="form-application" method="get" action="/user/users">
-        <button class="btn btn-lg btn-primary btn-block" type="submit">Users</button>
+    <form sec:authorize="isAuthenticated()" class="form-application" method="get" action="/user/friends">
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Friends</button>
     </form>
 
     <form sec:authorize="isAuthenticated()" class="form-application" method="post" action="/logout">
