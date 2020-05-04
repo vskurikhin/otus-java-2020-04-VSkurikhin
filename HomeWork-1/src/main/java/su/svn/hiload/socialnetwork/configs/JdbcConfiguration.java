@@ -28,7 +28,7 @@ public class JdbcConfiguration {
     @Value("${spring.datasource.driver-class-name}")
     private String dbDriver;
 
-    @Value("${init-db:false}")
+    @Value("${init-db:true}")
     private String initDatabase;
 
     @Value("${application.db.username}")

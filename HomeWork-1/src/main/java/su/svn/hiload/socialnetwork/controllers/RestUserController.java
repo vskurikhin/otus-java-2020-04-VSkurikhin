@@ -1,25 +1,33 @@
 package su.svn.hiload.socialnetwork.controllers;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoDao;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestDao;
+import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInterest;
+import su.svn.hiload.socialnetwork.view.FriendId;
 
 @RestController
-@RequestMapping("/user/interests")
 public class RestUserController {
 
+    private final UserInfoDao userInfoDao;
     private final UserInterestDao userInterestDao;
 
-    public RestUserController(UserInterestDao userInterestDao) {
+    public RestUserController(UserInfoDao userInfoDao, UserInterestDao userInterestDao) {
+        this.userInfoDao = userInfoDao;
         this.userInterestDao = userInterestDao;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("${application.rest.user}/interests/{id}")
     private Flux<UserInterest> readAllByUserInfoId(@PathVariable long id) {
         return userInterestDao.readAllByUserInfoId(id);
+    }
+
+    @PostMapping(value = "${application.rest.user}/add-friend/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    private Mono<UserInfo> addFriend(@PathVariable long id, @RequestBody FriendId friendId) {
+        return userInfoDao.addFriend(id, friendId.getFriendId());
     }
 }

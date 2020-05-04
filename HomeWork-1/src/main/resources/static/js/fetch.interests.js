@@ -3,14 +3,10 @@ function findAllInterest(id) {
     console.log('findAllInterest');
     $.ajax({
         type: 'GET',
-        url: '/user/interests/' + id,
+        url: '/user/api/interests/' + id,
         dataType: "json", // data type of response
         success: renderList
     });
-}
-
-function find() {
-    findAll();
 }
 
 function renderList(data) {

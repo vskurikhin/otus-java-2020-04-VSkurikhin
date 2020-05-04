@@ -1,5 +1,4 @@
 application:
-  locale: "en_US"
   db:
     username: ${DB_USER:dbuser}
     password: ${DB_PASS:password}
@@ -7,6 +6,9 @@ application:
       host: ${DB_HOST:localhost}
       port: ${DB_PORT:3306}
       database: ${DB_NAME:db}
+  locale: "en_US"
+  rest:
+    user: "/user/api"
   security:
     strength: 12
 
@@ -16,7 +18,8 @@ logging:
     su.svn: TRACE
 
 server:
-  port: 18081
+  port: ${PORT:5000}
+
 
 spring:
   datasource:
@@ -24,15 +27,16 @@ spring:
     url: ${JDBC_DATABASE_URL:jdbc:mysql://localhost/db?reconnect=true}?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     hikari:
       connection-timeout: 30000
-      maximum-pool-size: 10
+      maximum-pool-size: 5
   liquibase:
     enabled: false
+      maximum-pool-size: 5
   profiles.active: production
   r2dbc:
     pool:
       enabled: true
-      initial-size: 5
-      max-size: 10
+      initial-size: 2
+      max-size: 5
   thymeleaf:
     reactive:
       max-chunk-size: 8192
@@ -41,3 +45,7 @@ spring:
     mode: HTML
     prefix: classpath:/templates/
     suffix: .html
+      initial-size: 4
+      max-size: 5
+  thymeleaf.mode: HTML
+
