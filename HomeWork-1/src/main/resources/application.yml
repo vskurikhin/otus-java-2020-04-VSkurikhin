@@ -28,23 +28,10 @@ spring:
     hikari:
       connection-timeout: 30000
       maximum-pool-size: 5
-  liquibase:
-    enabled: false
-      maximum-pool-size: 5
   profiles.active: production
   r2dbc:
     pool:
       enabled: true
-      initial-size: 2
-      max-size: 5
-  thymeleaf:
-    reactive:
-      max-chunk-size: 8192
-    enabled: true
-    encoding: UTF-8
-    mode: HTML
-    prefix: classpath:/templates/
-    suffix: .html
       initial-size: 4
       max-size: 5
   thymeleaf.mode: HTML
