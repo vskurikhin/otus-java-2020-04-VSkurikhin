@@ -6,16 +6,20 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 
+import java.util.regex.Pattern;
+
 @Repository("userProfileR2dbcDao")
 public class UserProfileR2dbcDao implements UserProfileDao {
 
     private final DatabaseClient databaseClient;
 
-    private final static String FIND_BY_LOGIN = "SELECT id, login, hash, expired, locked FROM user_profile WHERE login = $1";
+    private final static String FIND_BY_LOGIN = "SELECT id, login, hash, expired, locked FROM user_profile WHERE login = '%s'";
 
     private final static String FIND_ALL = "SELECT id, login, hash, expired, locked FROM user_profile";
 
     private final static String CREATE = "INSERT INTO user_profile (login, hash, expired, locked) VALUES ($1, $2, $3, $4)";
+
+    private final static Pattern pattern = Pattern.compile("\\w+");
 
     public UserProfileR2dbcDao(DatabaseClient databaseClient) {
         this.databaseClient = databaseClient;
@@ -34,10 +38,12 @@ public class UserProfileR2dbcDao implements UserProfileDao {
 
     @Override
     public Mono<UserProfile> readLogin(String login) {
-        return databaseClient.execute(FIND_BY_LOGIN)
-                .bind("$1", login)
-                .as(UserProfile.class)
-                .fetch().first();
+        if (pattern.matcher(login).matches()) {
+            return databaseClient.execute(String.format(FIND_BY_LOGIN, login))
+                    .as(UserProfile.class)
+                    .fetch().first();
+        } else
+            return Mono.empty();
     }
 
     @Override
