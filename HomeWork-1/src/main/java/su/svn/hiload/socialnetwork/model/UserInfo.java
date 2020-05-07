@@ -6,7 +6,7 @@ import java.util.Objects;
 public class UserInfo implements Serializable, DBEntry {
     static final long serialVersionUID = -2L;
 
-    private long id;
+    private Long id;
 
     private String firstName;
 
@@ -33,7 +33,7 @@ public class UserInfo implements Serializable, DBEntry {
         this.friend = friend;
     }
 
-    public long getId() {
+    public Long getId() {
         return this.id;
     }
 

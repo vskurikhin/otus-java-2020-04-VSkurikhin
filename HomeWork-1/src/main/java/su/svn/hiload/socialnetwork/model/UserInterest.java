@@ -22,7 +22,7 @@ public class UserInterest  implements Serializable, DBEntry {
     }
 
     @Override
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -51,7 +51,7 @@ public class UserInterest  implements Serializable, DBEntry {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserInterest that = (UserInterest) o;
-        return id == that.id &&
+        return id.equals(that.id) &&
                 userInfoId == that.userInfoId &&
                 Objects.equals(interest, that.interest);
     }

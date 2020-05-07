@@ -3,6 +3,7 @@ package su.svn.hiload.socialnetwork.controllers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,13 +15,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
+import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.services.OldSchoolBlockingService;
 import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
 import java.net.URI;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Controller
 public class IndexController {
@@ -105,16 +110,35 @@ public class IndexController {
     }
 
     @RequestMapping("/user/users")
-    public String userIndexList(@AuthenticationPrincipal UserDetails user, final Model model) {
-        Long id = null;
-        if ((id = blockingService.readIdByLogin(user.getUsername())) != null) {
-            model.addAttribute("users", reactiveService.getAllUsers(id));
-        } else {
-            model.addAttribute("users", reactiveService.createReactiveDataDriverContextVariableFluxEmpty());
-        }
-        model.addAttribute("id", id);
+    public Mono<ServerResponse> userIndexList(@AuthenticationPrincipal UserDetails user, final Model model) {
+        return reactiveService.readByLogin(user.getUsername())
+                .flatMap(userProfile -> {
+                    userIndexListOnSuccess(userProfile, model);
+                    return ServerResponse.ok()
+                            .contentType(MediaType.TEXT_HTML)
+                            .render("user/users/index");
+                });
+//        reactiveService.readByLogin(user.getUsername())
+//                .subscribe(userProfile -> userIndexListOnSuccess(userProfile, model), this::userIndexListOnError)
+//        ServerResponse.ok()
+//                .contentType(MediaType.TEXT_HTML)
+//                .render("user/users/index");
+    }
 
-        return "user/users/index";
+    private void userIndexListOnSuccess(UserProfile userProfile, final Model model) {
+        model.addAttribute("users", reactiveService.getAllUsers(userProfile.getId()));
+        model.addAttribute("id", userProfile.getId());
+    }
+
+    private void userIndexListOnError(Throwable throwable) {
+        LOG.error("userIndexList: ", throwable);
+    }
+
+    @RequestMapping("/user/users/profile")
+    public String userIndexProfile(@AuthenticationPrincipal UserDetails user, final Model model, @RequestParam("id") long id) {
+        model.addAttribute("user", reactiveService.readById(id));
+
+        return "user/users/profile";
     }
 
     @GetMapping("/error")

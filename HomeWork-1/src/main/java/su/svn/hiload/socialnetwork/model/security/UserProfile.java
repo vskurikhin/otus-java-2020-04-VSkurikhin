@@ -8,7 +8,7 @@ import java.util.Objects;
 public class UserProfile implements Serializable, DBEntry {
     static final long serialVersionUID = -1L;
 
-    private long id;
+    private Long id;
 
     private String login;
 
@@ -29,7 +29,7 @@ public class UserProfile implements Serializable, DBEntry {
     public UserProfile() {
     }
 
-    public long getId() {
+    public Long getId() {
         return this.id;
     }
 
@@ -74,7 +74,7 @@ public class UserProfile implements Serializable, DBEntry {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UserProfile that = (UserProfile) o;
-        return id == that.id &&
+        return id.equals(that.id) &&
                 expired == that.expired &&
                 locked == that.locked &&
                 Objects.equals(login, that.login) &&
