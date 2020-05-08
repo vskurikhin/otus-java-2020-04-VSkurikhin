@@ -3,7 +3,6 @@ package su.svn.hiload.socialnetwork.controllers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,8 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
+import su.svn.hiload.socialnetwork.model.InterestsCollector;
+import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.services.OldSchoolBlockingService;
 import su.svn.hiload.socialnetwork.services.ReactiveService;
@@ -24,8 +24,6 @@ import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
 import java.net.URI;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 @Controller
 public class IndexController {
@@ -75,10 +73,31 @@ public class IndexController {
     }
 
     @GetMapping("/user/application")
-    public String userIndexApplication(@AuthenticationPrincipal UserDetails user, final Model model) {
-        blockingService.getUserApplication(user, model);
+    public Mono<String> userIndexApplication(@AuthenticationPrincipal UserDetails user, final Model model) {
+        return reactiveService.readByLogin(user.getUsername())
+                .flatMap(userProfile -> getUserApplication(userProfile, model))
+                .switchIfEmpty(Mono.just("error"));
+    }
 
-        return "user/application";
+    public Mono<String> getUserApplication(final UserProfile user, final Model model) {
+        return reactiveService.readInfoById(user.getId())
+                .flatMap(userInfo -> fillApplicationForm(user, userInfo, model))
+                .switchIfEmpty(Mono.just("error"));
+    }
+
+    private Mono<String> fillApplicationForm(UserProfile userProfile, UserInfo userInfo, final Model model) {
+        final ApplicationForm form = new ApplicationForm();
+        form.setUsername(userProfile.getLogin());
+        form.setFirstName(userInfo.getFirstName());
+        form.setSurName(userInfo.getSurName());
+        form.setAge(userInfo.getAge());
+        form.setSex(userInfo.getSex());
+        form.setCity(userInfo.getCity());
+        model.addAttribute("username", userProfile.getLogin());
+
+        return reactiveService.readAllByUserInfoId(userProfile.getId())
+                .collect(new InterestsCollector(form, model))
+                .switchIfEmpty(Mono.just("error"));
     }
 
     @PostMapping("/user/application")
@@ -97,35 +116,29 @@ public class IndexController {
     }
 
     @RequestMapping("/user/friends")
-    public String userIndexFriends(@AuthenticationPrincipal UserDetails user, final Model model) {
-        Long id = null;
-        if ((id = blockingService.readIdByLogin(user.getUsername())) != null) {
-            model.addAttribute("friends", reactiveService.getAllFriends(id));
-        } else {
-            model.addAttribute("friends", reactiveService.createReactiveDataDriverContextVariableFluxEmpty());
-        }
-        model.addAttribute("id", id);
+    public Mono<String> userIndexFriends(@AuthenticationPrincipal UserDetails user, final Model model) {
+        return reactiveService.readByLogin(user.getUsername())
+                .flatMap(userProfile -> {
+                    friendsIndexListOnSuccess(userProfile, model);
+                    return Mono.just("user/friends/index");
+                }).switchIfEmpty(Mono.just("error"));
+    }
 
-        return "user/friends/index";
+    private void friendsIndexListOnSuccess(UserProfile userProfile, final Model model) {
+        model.addAttribute("friends", reactiveService.getAllFriends(userProfile.getId()));
+        model.addAttribute("id", userProfile.getId());
     }
 
     @RequestMapping("/user/users")
-    public Mono<ServerResponse> userIndexList(@AuthenticationPrincipal UserDetails user, final Model model) {
+    public Mono<String> userIndexList(@AuthenticationPrincipal UserDetails user, final Model model) {
         return reactiveService.readByLogin(user.getUsername())
                 .flatMap(userProfile -> {
-                    userIndexListOnSuccess(userProfile, model);
-                    return ServerResponse.ok()
-                            .contentType(MediaType.TEXT_HTML)
-                            .render("user/users/index");
-                });
-//        reactiveService.readByLogin(user.getUsername())
-//                .subscribe(userProfile -> userIndexListOnSuccess(userProfile, model), this::userIndexListOnError)
-//        ServerResponse.ok()
-//                .contentType(MediaType.TEXT_HTML)
-//                .render("user/users/index");
+                    usersIndexListOnSuccess(userProfile, model);
+                    return Mono.just("user/users/index");
+                }).switchIfEmpty(Mono.just("error"));
     }
 
-    private void userIndexListOnSuccess(UserProfile userProfile, final Model model) {
+    private void usersIndexListOnSuccess(UserProfile userProfile, final Model model) {
         model.addAttribute("users", reactiveService.getAllUsers(userProfile.getId()));
         model.addAttribute("id", userProfile.getId());
     }

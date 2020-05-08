@@ -15,7 +15,6 @@ import su.svn.hiload.socialnetwork.view.Interest;
 import su.svn.hiload.socialnetwork.view.Profile;
 
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -88,5 +87,13 @@ public class ReactiveService {
         interest.setInterest(userInterest.getInterest());
 
         return interest;
+    }
+
+    public Mono<UserInfo> readInfoById(Long id) {
+        return userInfoR2dbcDao.readById(id);
+    }
+
+    public Flux<UserInterest> readAllByUserInfoId(Long id) {
+        return userInterestR2dbcDao.readAllByUserInfoId(id);
     }
 }
