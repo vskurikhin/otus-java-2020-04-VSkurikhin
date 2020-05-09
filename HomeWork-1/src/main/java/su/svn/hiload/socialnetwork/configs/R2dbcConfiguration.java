@@ -62,6 +62,7 @@ public class R2dbcConfiguration {
                 .option(ACQUIRE_RETRY, acquireRetry)
                 .option(INITIAL_SIZE, initialSize)
                 .option(MAX_SIZE, maxSize)
+                .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
                 .build();
         return ConnectionFactories.get(options);
     }
