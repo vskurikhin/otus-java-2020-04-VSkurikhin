@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Mono;
-import su.svn.hiload.socialnetwork.model.InterestsCollector;
+import su.svn.hiload.socialnetwork.services.InterestsCollectorToForm;
 import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.services.OldSchoolBlockingService;
@@ -47,19 +47,22 @@ public class IndexController {
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public Mono<Void> userRegistration(RegistrationForm form, BindingResult errors, ServerHttpResponse response) {
         if (errors.hasErrors()) {
-             response.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-             response.getHeaders().setLocation(URI.create("/error?code=10"));
-
-             return response.setComplete();
+            return createTemporaryRedirect(response, "/error?code=10");
         }
-        if (blockingService.createUserProfile(form)) {
-            response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
-            response.getHeaders().setLocation(URI.create("/user/application"));
+        return reactiveService.createUserProfile(form).flatMap(count -> {
+            if (count > 0) {
+                response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
+                response.getHeaders().setLocation(URI.create("/user/application"));
 
-             return response.setComplete();
-        }
+                return response.setComplete();
+            }
+            return createTemporaryRedirect(response, "/error?code=15");
+        }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
+    }
+
+    private Mono<Void> createTemporaryRedirect(ServerHttpResponse response, String path) {
         response.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-        response.getHeaders().setLocation(URI.create("/error?code=20"));
+        response.getHeaders().setLocation(URI.create(path));
 
         return response.setComplete();
     }
@@ -80,24 +83,30 @@ public class IndexController {
     }
 
     public Mono<String> getUserApplication(final UserProfile user, final Model model) {
+        final ApplicationForm form = new ApplicationForm();
+        form.setUsername(user.getLogin());
+        model.addAttribute("username", user.getLogin());
+
         return reactiveService.readInfoById(user.getId())
-                .flatMap(userInfo -> fillApplicationForm(user, userInfo, model))
-                .switchIfEmpty(Mono.just("error"));
+                .flatMap(userInfo -> fillApplicationForm(form, userInfo, model))
+                .switchIfEmpty(emptyApplicationForm(form, model));
     }
 
-    private Mono<String> fillApplicationForm(UserProfile userProfile, UserInfo userInfo, final Model model) {
-        final ApplicationForm form = new ApplicationForm();
-        form.setUsername(userProfile.getLogin());
+    private Mono<String> fillApplicationForm(final ApplicationForm form, UserInfo userInfo, final Model model) {
         form.setFirstName(userInfo.getFirstName());
         form.setSurName(userInfo.getSurName());
         form.setAge(userInfo.getAge());
         form.setSex(userInfo.getSex());
         form.setCity(userInfo.getCity());
-        model.addAttribute("username", userProfile.getLogin());
 
-        return reactiveService.readAllByUserInfoId(userProfile.getId())
-                .collect(new InterestsCollector(form, model))
+        return reactiveService.readAllByUserInfoId(userInfo.getId())
+                .collect(new InterestsCollectorToForm(form, model, "user/application"))
                 .switchIfEmpty(Mono.just("error"));
+    }
+
+    private Mono<String> emptyApplicationForm(final ApplicationForm form, final Model model) {
+        model.addAttribute("form", form);
+        return Mono.just("user/application");
     }
 
     @PostMapping("/user/application")

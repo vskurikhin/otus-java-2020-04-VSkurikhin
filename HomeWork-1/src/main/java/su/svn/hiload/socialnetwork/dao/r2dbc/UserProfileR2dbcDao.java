@@ -1,55 +1,73 @@
 package su.svn.hiload.socialnetwork.dao.r2dbc;
 
+import io.r2dbc.spi.ConnectionFactory;
+import io.r2dbc.spi.Result;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 
-import java.util.regex.Pattern;
+import java.util.Objects;
 
 @Repository("userProfileR2dbcDao")
-public class UserProfileR2dbcDao implements UserProfileDao {
+public class UserProfileR2dbcDao implements UserProfileCustomDao {
+
+    private final ConnectionFactory connectionFactory;
 
     private final DatabaseClient databaseClient;
 
-    private final static String FIND_BY_LOGIN = "SELECT id, login, hash, expired, locked FROM user_profile WHERE login = '%s'";
+    private final static String FIND_BY_LOGIN = "SELECT id, login, hash, expired, locked FROM user_profile WHERE login = ?";
 
     private final static String FIND_ALL = "SELECT id, login, hash, expired, locked FROM user_profile";
 
-    private final static String CREATE = "INSERT INTO user_profile (login, hash, expired, locked) VALUES ($1, $2, $3, $4)";
+    private final static String CREATE = "INSERT INTO user_profile (login, hash, expired, locked) VALUES (?, ?, ?, ?)";
 
-    private final static Pattern pattern = Pattern.compile("\\w+");
-
-    public UserProfileR2dbcDao(DatabaseClient databaseClient) {
+    public UserProfileR2dbcDao(ConnectionFactory connectionFactory, DatabaseClient databaseClient) {
+        this.connectionFactory = connectionFactory;
         this.databaseClient = databaseClient;
     }
 
     @Override
     public Mono<Integer> create(UserProfile userProfile) {
-        return databaseClient.execute(CREATE)
-                .bind("$1", userProfile.getLogin())
-                .bind("$2", userProfile.getHash())
-                .bind("$3", userProfile.isExpired())
-                .bind("$4", userProfile.isLocked())
-                .fetch()
-                .rowsUpdated();
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> connection.createStatement(CREATE)
+                        .bind(0, userProfile.getLogin())
+                        .bind(1, userProfile.getHash())
+                        .bind(2, userProfile.isExpired())
+                        .bind(3, userProfile.isLocked())
+                        .execute());
+        return resultsFlux
+                .flatMap(result -> result.map((row, rowMetadata) -> row.get(0, Integer.class)))
+                .next();
     }
 
     @Override
-    public Mono<UserProfile> readLogin(String login) {
-        if (pattern.matcher(login).matches()) {
-            return databaseClient.execute(String.format(FIND_BY_LOGIN, login))
-                    .as(UserProfile.class)
-                    .fetch().first();
-        } else
-            return Mono.empty();
+    public Mono<UserProfile> readFirstByLogin(String login) {
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> connection.createStatement(FIND_BY_LOGIN)
+                .bind(0, login)
+                .execute());
+        return liftMapResultToUserProfile(resultsFlux).next();
     }
 
     @Override
     public Flux<UserProfile> readAll() {
-        return databaseClient.execute(FIND_ALL)
-                .as(UserProfile.class)
-                .fetch().all();
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> connection.createStatement(FIND_ALL)
+                .execute());
+        return liftMapResultToUserProfile(resultsFlux);
+    }
+
+    private Flux<UserProfile> liftMapResultToUserProfile(Flux<Result> resultsFlux) {
+        return resultsFlux.flatMap(result -> result.map((row, rowMetadata) -> {
+            Long id = row.get("id", Long.class);
+            String login = row.get("login", String.class);
+            String hash = row.get("hash", String.class);
+            Boolean expired = row.get("expired", Boolean.class);
+            Boolean locked = row.get("locked", Boolean.class);
+            Objects.requireNonNull(id);
+            return new UserProfile(id, login, hash, expired, locked);
+        }));
     }
 }

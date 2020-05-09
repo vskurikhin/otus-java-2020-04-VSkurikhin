@@ -33,36 +33,36 @@ public class UserProfile implements Serializable, DBEntry {
         return this.id;
     }
 
-    public String getLogin() {
-        return this.login;
-    }
-
-    public String getHash() {
-        return this.hash;
-    }
-
-    public boolean isExpired() {
-        return this.expired;
-    }
-
-    public boolean isLocked() {
-        return this.locked;
-    }
-
     public void setId(long id) {
         this.id = id;
+    }
+
+    public String getLogin() {
+        return this.login;
     }
 
     public void setLogin(String login) {
         this.login = login;
     }
 
+    public String getHash() {
+        return this.hash;
+    }
+
     public void setHash(String hash) {
         this.hash = hash;
     }
 
+    public boolean isExpired() {
+        return this.expired;
+    }
+
     public void setExpired(boolean expired) {
         this.expired = expired;
+    }
+
+    public boolean isLocked() {
+        return this.locked;
     }
 
     public void setLocked(boolean locked) {

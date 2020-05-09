@@ -1,5 +1,7 @@
 package su.svn.hiload.socialnetwork.services;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.spring5.context.webflux.IReactiveDataDriverContextVariable;
 import org.thymeleaf.spring5.context.webflux.ReactiveDataDriverContextVariable;
@@ -13,12 +15,15 @@ import su.svn.hiload.socialnetwork.model.UserInterest;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.view.Interest;
 import su.svn.hiload.socialnetwork.view.Profile;
+import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class ReactiveService {
+
+    private BCryptPasswordEncoder encoder;
 
     private final UserInfoDao userInfoR2dbcDao;
 
@@ -27,12 +32,25 @@ public class ReactiveService {
     private final UserInterestDao userInterestR2dbcDao;
 
     public ReactiveService(
+            @Value("${application.security.strength}") int strength,
             UserInfoDao userInfoR2dbcDao,
             UserProfileDao userProfileR2dbcDao,
             UserInterestDao userInterestR2dbcDao) {
+        this.encoder = new BCryptPasswordEncoder(strength);
         this.userInfoR2dbcDao = userInfoR2dbcDao;
         this.userProfileR2dbcDao = userProfileR2dbcDao;
         this.userInterestR2dbcDao = userInterestR2dbcDao;
+    }
+
+    public Mono<Integer> createUserProfile(RegistrationForm form) {
+        String hash = encoder.encode(form.getPassword());
+        UserProfile userProfile = new UserProfile();
+        userProfile.setLogin(form.getUsername());
+        userProfile.setHash(hash);
+        userProfile.setLocked(false);
+        userProfile.setExpired(false);
+
+        return userProfileR2dbcDao.create(userProfile);
     }
 
     public IReactiveDataDriverContextVariable getAllUsers(long id) {
@@ -56,7 +74,7 @@ public class ReactiveService {
     }
 
     public Mono<UserProfile> readByLogin(String login) {
-        return userProfileR2dbcDao.readLogin(login);
+        return userProfileR2dbcDao.findFirstByLogin(login);
     }
 
     private Profile convertUserInfo(UserInfo userInfo, long id) {
