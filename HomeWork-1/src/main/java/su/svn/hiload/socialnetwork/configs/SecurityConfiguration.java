@@ -24,7 +24,7 @@ public class SecurityConfiguration {
         return http
                 .csrf().disable()
                 .authorizeExchange()
-                .pathMatchers("/", "/index.html", "/register", "/registration.html", "/login", "/logout").permitAll()
+                .pathMatchers("/", "/index.html", "/register", "/registration.html", "/login", "/logout", "/error").permitAll()
                 .pathMatchers("/i18n/**",
                         "/css/**",
                         "/fonts/**",

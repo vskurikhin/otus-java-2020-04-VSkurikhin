@@ -15,6 +15,8 @@ import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestDao;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestR2DbcDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.UserProfileDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.UserProfileR2dbcDao;
 
 import java.time.Duration;
 
@@ -93,7 +95,13 @@ public class R2dbcConfiguration {
     }
 
     @Bean("userInterestDao")
-    public UserInterestDao departmentDao(R2dbcRepositoryFactory factory, UserInterestR2DbcDao userInterestR2DbcDao) {
+    public UserInterestDao userInterestDao(R2dbcRepositoryFactory factory, UserInterestR2DbcDao userInterestR2DbcDao) {
         return factory.getRepository(UserInterestDao.class, userInterestR2DbcDao);
     }
+
+    @Bean("userProfileDao")
+    public UserProfileDao userProfileDao(R2dbcRepositoryFactory factory, UserProfileR2dbcDao userProfileR2dbcDao) {
+        return factory.getRepository(UserProfileDao.class, userProfileR2dbcDao);
+    }
+
 }
