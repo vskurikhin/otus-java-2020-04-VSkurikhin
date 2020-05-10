@@ -32,10 +32,10 @@ public class IndexController {
 
     private final ReactiveService reactiveService;
 
-    private final OldSchoolBlockingService blockingService;
+    // private final OldSchoolBlockingService blockingService;
 
     public IndexController(ReactiveService reactiveService, OldSchoolBlockingService blockingService) {
-        this.blockingService = blockingService;
+        // this.blockingService = blockingService;
         this.reactiveService = reactiveService;
     }
 
@@ -117,11 +117,16 @@ public class IndexController {
 
             return response.setComplete();
         }
-        blockingService.postUserApplication(form);
-        response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
-        response.getHeaders().setLocation(URI.create("/user/users"));
+        return reactiveService.postUserApplication(form).flatMap(count -> {
+            System.err.println("count0 = " + count);
+            if (count > 0) {
+                response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
+                response.getHeaders().setLocation(URI.create("/user/users"));
 
-        return response.setComplete();
+                return response.setComplete();
+            }
+            return createTemporaryRedirect(response, "/error?code=15");
+        }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
     }
 
     @RequestMapping("/user/friends")
