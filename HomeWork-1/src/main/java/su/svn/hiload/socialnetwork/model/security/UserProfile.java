@@ -1,5 +1,6 @@
 package su.svn.hiload.socialnetwork.model.security;
 
+import org.springframework.data.annotation.Id;
 import su.svn.hiload.socialnetwork.model.DBEntry;
 
 import java.io.Serializable;
@@ -8,6 +9,7 @@ import java.util.Objects;
 public class UserProfile implements Serializable, DBEntry {
     static final long serialVersionUID = -1L;
 
+    @Id
     private Long id;
 
     private String login;

@@ -8,11 +8,13 @@ import org.thymeleaf.spring5.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoSignFriendDao;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestDao;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserProfileDao;
 import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInterest;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
+import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.Interest;
 import su.svn.hiload.socialnetwork.view.Profile;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
@@ -27,6 +29,8 @@ public class ReactiveService {
 
     private final UserInfoDao userInfoR2dbcDao;
 
+    private final UserInfoSignFriendDao userInfoSignFriendDao;
+
     private final UserProfileDao userProfileR2dbcDao;
 
     private final UserInterestDao userInterestR2dbcDao;
@@ -34,10 +38,12 @@ public class ReactiveService {
     public ReactiveService(
             @Value("${application.security.strength}") int strength,
             UserInfoDao userInfoR2dbcDao,
+            UserInfoSignFriendDao userInfoSignFriendDao,
             UserProfileDao userProfileR2dbcDao,
             UserInterestDao userInterestR2dbcDao) {
         this.encoder = new BCryptPasswordEncoder(strength);
         this.userInfoR2dbcDao = userInfoR2dbcDao;
+        this.userInfoSignFriendDao = userInfoSignFriendDao;
         this.userProfileR2dbcDao = userProfileR2dbcDao;
         this.userInterestR2dbcDao = userInterestR2dbcDao;
     }
@@ -54,7 +60,7 @@ public class ReactiveService {
     }
 
     public IReactiveDataDriverContextVariable getAllUsers(long id) {
-        return new ReactiveDataDriverContextVariable(userInfoR2dbcDao.readAllUsers(id), 1);
+        return new ReactiveDataDriverContextVariable(userInfoSignFriendDao.readAllUsersSignFriend(id), 1);
     }
 
     public IReactiveDataDriverContextVariable getAllFriends(long id) {
@@ -70,7 +76,7 @@ public class ReactiveService {
     }
 
     public Mono<Profile> readById(long id) {
-        return userInfoR2dbcDao.readById(id).map(userInfo -> convertUserInfo(userInfo, id));
+        return userInfoR2dbcDao.readFirstById(id).map(userInfo -> convertUserInfo(userInfo, id));
     }
 
     public Mono<UserProfile> readByLogin(String login) {
@@ -108,10 +114,34 @@ public class ReactiveService {
     }
 
     public Mono<UserInfo> readInfoById(Long id) {
-        return userInfoR2dbcDao.readById(id);
+        return userInfoR2dbcDao.readFirstById(id);
     }
 
     public Flux<UserInterest> readAllByUserInfoId(Long id) {
         return userInterestR2dbcDao.readAllByUserInfoId(id);
+    }
+
+    public Mono<Integer> postUserApplication(ApplicationForm form) {
+        return userProfileR2dbcDao.findFirstByLogin(form.getUsername())
+                .flatMap(userProfile -> postUserApplication(form, userProfile))
+                .switchIfEmpty(Mono.just(-1));
+    }
+
+    private Mono<Integer> postUserApplication(ApplicationForm form, UserProfile userProfile) {
+        UserInfo userInfo = new UserInfo();
+        userInfo.setId(userProfile.getId());
+        userInfo.setFirstName(form.getFirstName());
+        userInfo.setSurName(form.getSurName());
+        userInfo.setAge(form.getAge());
+        userInfo.setSex(form.getSex());
+        userInfo.setCity(form.getCity());
+
+        return userInfoR2dbcDao.existsById(userProfile.getId())
+                .flatMap(exists -> updateOrCreate(userInfo, exists))
+                .switchIfEmpty(Mono.just(-2));
+    }
+
+    private Mono<Integer> updateOrCreate(UserInfo userInfo, Boolean exists) {
+        return exists ? userInfoR2dbcDao.update(userInfo) : userInfoR2dbcDao.create(userInfo);
     }
 }

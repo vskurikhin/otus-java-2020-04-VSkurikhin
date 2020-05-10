@@ -1,11 +1,14 @@
 package su.svn.hiload.socialnetwork.model;
 
+import org.springframework.data.annotation.Id;
+
 import java.io.Serializable;
 import java.util.Objects;
 
 public class UserInterest  implements Serializable, DBEntry {
     static final long serialVersionUID = -3L;
 
+    @Id
     private Long id;
 
     private long userInfoId;

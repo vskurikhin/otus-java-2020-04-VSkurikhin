@@ -1,14 +1,11 @@
 package su.svn.hiload.socialnetwork.model;
 
-import org.springframework.data.annotation.Id;
-
 import java.io.Serializable;
 import java.util.Objects;
 
-public class UserInfo implements Serializable, DBEntry {
-    static final long serialVersionUID = -2L;
+public class UserInfoSignFriend implements Serializable, DBEntry {
+    static final long serialVersionUID = -4L;
 
-    @Id
     private Long id;
 
     private String firstName;
@@ -21,23 +18,34 @@ public class UserInfo implements Serializable, DBEntry {
 
     private String city;
 
-    public UserInfo() {
+    private Boolean friend;
+
+    public UserInfoSignFriend() {
     }
 
-    public UserInfo(long id, String firstName, String surName, Integer age, String sex, String city) {
+    public UserInfoSignFriend(
+            long id,
+            String firstName,
+            String surName,
+            Integer age,
+            String sex,
+            String city,
+            Boolean friend) {
         this.id = id;
         this.firstName = firstName;
         this.surName = surName;
         this.age = age;
         this.sex = sex;
         this.city = city;
+        this.friend = friend;
     }
 
+    @Override
     public Long getId() {
-        return this.id;
+        return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -50,7 +58,7 @@ public class UserInfo implements Serializable, DBEntry {
     }
 
     public String getSurName() {
-        return this.surName;
+        return surName;
     }
 
     public void setSurName(String surName) {
@@ -70,7 +78,7 @@ public class UserInfo implements Serializable, DBEntry {
     }
 
     public void setSex(String sex) {
-        this.sex = sex.substring(0, 1);
+        this.sex = sex;
     }
 
     public String getCity() {
@@ -81,37 +89,43 @@ public class UserInfo implements Serializable, DBEntry {
         this.city = city;
     }
 
+    public Boolean getFriend() {
+        return friend;
+    }
+
+    public void setFriend(Boolean friend) {
+        this.friend = friend;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        UserInfo userInfo = (UserInfo) o;
-        return id.equals(userInfo.id) &&
-                Objects.equals(firstName, userInfo.firstName) &&
-                Objects.equals(surName, userInfo.surName) &&
-                Objects.equals(age, userInfo.age) &&
-                Objects.equals(sex, userInfo.sex) &&
-                Objects.equals(city, userInfo.city);
+        if (!(o instanceof UserInfoSignFriend)) return false;
+        UserInfoSignFriend that = (UserInfoSignFriend) o;
+        return Objects.equals(id, that.id) &&
+                Objects.equals(firstName, that.firstName) &&
+                Objects.equals(surName, that.surName) &&
+                Objects.equals(age, that.age) &&
+                Objects.equals(sex, that.sex) &&
+                Objects.equals(city, that.city) &&
+                Objects.equals(friend, that.friend);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, firstName, surName, age, sex, city);
-    }
-
-    protected boolean canEqual(final Object other) {
-        return other instanceof UserInfo;
+        return Objects.hash(id, firstName, surName, age, sex, city, friend);
     }
 
     @Override
     public String toString() {
-        return "UserInfo{" +
+        return "UserInfoSignFriend{" +
                 "id=" + id +
                 ", firstName='" + firstName + '\'' +
                 ", surName='" + surName + '\'' +
                 ", age=" + age +
                 ", sex='" + sex + '\'' +
                 ", city='" + city + '\'' +
+                ", friend=" + friend +
                 '}';
     }
 }
