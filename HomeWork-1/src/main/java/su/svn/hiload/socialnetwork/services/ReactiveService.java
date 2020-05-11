@@ -1,17 +1,21 @@
 package su.svn.hiload.socialnetwork.services;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.Model;
 import org.thymeleaf.spring5.context.webflux.IReactiveDataDriverContextVariable;
 import org.thymeleaf.spring5.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoDao;
-import su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoSignFriendDao;
-import su.svn.hiload.socialnetwork.dao.r2dbc.UserInterestDao;
-import su.svn.hiload.socialnetwork.dao.r2dbc.UserProfileDao;
+import su.svn.hiload.socialnetwork.dao.UserInfoDao;
+import su.svn.hiload.socialnetwork.dao.UserInfoSignFriendDao;
+import su.svn.hiload.socialnetwork.dao.UserInterestDao;
+import su.svn.hiload.socialnetwork.dao.UserProfileDao;
 import su.svn.hiload.socialnetwork.model.UserInfo;
+import su.svn.hiload.socialnetwork.model.UserInfoSignFriend;
 import su.svn.hiload.socialnetwork.model.UserInterest;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
@@ -19,7 +23,9 @@ import su.svn.hiload.socialnetwork.view.Interest;
 import su.svn.hiload.socialnetwork.view.Profile;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,12 +65,32 @@ public class ReactiveService {
         return userProfileR2dbcDao.create(userProfile);
     }
 
-    public IReactiveDataDriverContextVariable getAllUsers(long id) {
-        return new ReactiveDataDriverContextVariable(userInfoSignFriendDao.readAllUsersSignFriend(id), 1);
+    public IReactiveDataDriverContextVariable getAllUsers(UserDetails user, Consumer<Long> consumer) {
+        return new ReactiveDataDriverContextVariable(getAllUsersWithConsumeer(user, consumer));
     }
 
-    public IReactiveDataDriverContextVariable getAllFriends(long id) {
-        return new ReactiveDataDriverContextVariable(userInfoR2dbcDao.readAllFriends(id), 1);
+    private Flux<UserInfoSignFriend> getAllUsersWithConsumeer(UserDetails user, Consumer<Long> consumer) {
+        return readByLogin(user.getUsername())
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .flatMapMany(userProfile -> {
+                    consumer.accept(userProfile.getId());
+                    return userInfoSignFriendDao.readAllUsersSignFriend(userProfile.getId());
+                })
+                .switchIfEmpty(Flux.empty());
+    }
+
+    public IReactiveDataDriverContextVariable getAllFriends(UserDetails user, Consumer<Long> consumer) {
+        return new ReactiveDataDriverContextVariable(getAllFriendsWithConsumeer(user, consumer));
+    }
+
+    private Flux<UserInfo> getAllFriendsWithConsumeer(UserDetails user, Consumer<Long> consumer) {
+        return readByLogin(user.getUsername())
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .flatMapMany(userProfile -> {
+                    consumer.accept(userProfile.getId());
+                    return userInfoR2dbcDao.readAllFriends(userProfile.getId());
+                })
+                .switchIfEmpty(Flux.empty());
     }
 
     public IReactiveDataDriverContextVariable createReactiveDataDriverContextVariableFluxEmpty() {
@@ -76,7 +102,9 @@ public class ReactiveService {
     }
 
     public Mono<Profile> readById(long id) {
-        return userInfoR2dbcDao.readFirstById(id).map(userInfo -> convertUserInfo(userInfo, id));
+        return userInfoR2dbcDao.readFirstById(id)
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .map(userInfo -> convertUserInfo(userInfo, id));
     }
 
     public Mono<UserProfile> readByLogin(String login) {
