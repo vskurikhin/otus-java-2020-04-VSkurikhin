@@ -18,12 +18,12 @@ import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.services.InterestsCollectorToForm;
 import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
-import su.svn.hiload.socialnetwork.services.OldSchoolBlockingService;
 import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
 import java.net.URI;
+import java.time.Duration;
 
 @Controller
 public class IndexController {
@@ -32,10 +32,7 @@ public class IndexController {
 
     private final ReactiveService reactiveService;
 
-    // private final OldSchoolBlockingService blockingService;
-
-    public IndexController(ReactiveService reactiveService, OldSchoolBlockingService blockingService) {
-        // this.blockingService = blockingService;
+    public IndexController(ReactiveService reactiveService) {
         this.reactiveService = reactiveService;
     }
 
@@ -49,15 +46,17 @@ public class IndexController {
         if (errors.hasErrors()) {
             return createTemporaryRedirect(response, "/error?code=10");
         }
-        return reactiveService.createUserProfile(form).flatMap(count -> {
-            if (count > 0) {
-                response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
-                response.getHeaders().setLocation(URI.create("/user/application"));
+        return reactiveService.createUserProfile(form)
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .flatMap(count -> {
+                    if (count > 0) {
+                        response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
+                        response.getHeaders().setLocation(URI.create("/user/application"));
 
-                return response.setComplete();
-            }
-            return createTemporaryRedirect(response, "/error?code=15");
-        }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
+                        return response.setComplete();
+                    }
+                    return createTemporaryRedirect(response, "/error?code=15");
+                }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
     }
 
     private Mono<Void> createTemporaryRedirect(ServerHttpResponse response, String path) {
@@ -78,6 +77,7 @@ public class IndexController {
     @GetMapping("/user/application")
     public Mono<String> userIndexApplication(@AuthenticationPrincipal UserDetails user, final Model model) {
         return reactiveService.readByLogin(user.getUsername())
+                .timeout(Duration.ofMillis(800), Mono.empty())
                 .flatMap(userProfile -> getUserApplication(userProfile, model))
                 .switchIfEmpty(Mono.just("error"));
     }
@@ -117,54 +117,37 @@ public class IndexController {
 
             return response.setComplete();
         }
-        return reactiveService.postUserApplication(form).flatMap(count -> {
-            System.err.println("count0 = " + count);
-            if (count > 0) {
-                response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
-                response.getHeaders().setLocation(URI.create("/user/users"));
+        return reactiveService.postUserApplication(form)
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .flatMap(count -> {
+                    if (count > -1) {
+                        response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
+                        response.getHeaders().setLocation(URI.create("/user/users"));
 
-                return response.setComplete();
-            }
-            return createTemporaryRedirect(response, "/error?code=15");
-        }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
+                        return response.setComplete();
+                    }
+                    return createTemporaryRedirect(response, "/error?code=15");
+                }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
     }
 
     @RequestMapping("/user/friends")
-    public Mono<String> userIndexFriends(@AuthenticationPrincipal UserDetails user, final Model model) {
-        return reactiveService.readByLogin(user.getUsername())
-                .flatMap(userProfile -> {
-                    friendsIndexListOnSuccess(userProfile, model);
-                    return Mono.just("user/friends/index");
-                }).switchIfEmpty(Mono.just("error"));
-    }
-
-    private void friendsIndexListOnSuccess(UserProfile userProfile, final Model model) {
-        model.addAttribute("friends", reactiveService.getAllFriends(userProfile.getId()));
-        model.addAttribute("id", userProfile.getId());
+    public String userIndexFriends(@AuthenticationPrincipal UserDetails user, final Model model) {
+        model.addAttribute("friends", reactiveService.getAllFriends(user, id -> injectUserIdToModel(model, id)));
+        return "user/friends/index";
     }
 
     @RequestMapping("/user/users")
-    public Mono<String> userIndexList(@AuthenticationPrincipal UserDetails user, final Model model) {
-        return reactiveService.readByLogin(user.getUsername())
-                .flatMap(userProfile -> {
-                    usersIndexListOnSuccess(userProfile, model);
-                    return Mono.just("user/users/index");
-                }).switchIfEmpty(Mono.just("error"));
+    public String userIndexList(@AuthenticationPrincipal UserDetails user, final Model model) {
+        model.addAttribute("users", reactiveService.getAllUsers(user, id -> injectUserIdToModel(model, id)));
+        return "user/users/index";
     }
-
-    private void usersIndexListOnSuccess(UserProfile userProfile, final Model model) {
-        model.addAttribute("users", reactiveService.getAllUsers(userProfile.getId()));
-        model.addAttribute("id", userProfile.getId());
-    }
-
-    private void userIndexListOnError(Throwable throwable) {
-        LOG.error("userIndexList: ", throwable);
+    private void injectUserIdToModel(final Model model, Long id) {
+        model.addAttribute("id", id);
     }
 
     @RequestMapping("/user/users/profile")
     public String userIndexProfile(@AuthenticationPrincipal UserDetails user, final Model model, @RequestParam("id") long id) {
         model.addAttribute("user", reactiveService.readById(id));
-
         return "user/users/profile";
     }
 

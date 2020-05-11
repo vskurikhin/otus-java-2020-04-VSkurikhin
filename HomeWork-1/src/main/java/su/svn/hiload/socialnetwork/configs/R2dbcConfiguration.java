@@ -13,7 +13,12 @@ import org.springframework.data.r2dbc.core.ReactiveDataAccessStrategy;
 import org.springframework.data.r2dbc.dialect.MySqlDialect;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
-import su.svn.hiload.socialnetwork.dao.r2dbc.*;
+import su.svn.hiload.socialnetwork.dao.UserInfoDao;
+import su.svn.hiload.socialnetwork.dao.UserInterestDao;
+import su.svn.hiload.socialnetwork.dao.UserProfileDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.impl.UserInfoR2dbcDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.impl.UserInterestR2DbcDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.impl.UserProfileR2dbcDao;
 
 import java.time.Duration;
 
@@ -62,6 +67,8 @@ public class R2dbcConfiguration {
                 .option(INITIAL_SIZE, initialSize)
                 .option(MAX_SIZE, maxSize)
                 .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
+                .option(Option.valueOf("maxLifeTime"), Duration.ofMillis(1000))
+                .option(Option.valueOf("maxIdleTime"), Duration.ofMillis(100))
                 .build();
         return ConnectionFactories.get(options);
     }
