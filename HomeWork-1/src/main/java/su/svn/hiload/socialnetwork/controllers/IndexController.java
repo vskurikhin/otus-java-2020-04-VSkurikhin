@@ -15,10 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Mono;
-import su.svn.hiload.socialnetwork.services.InterestsCollectorToForm;
-import su.svn.hiload.socialnetwork.model.UserInfo;
-import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.services.ReactiveService;
+import su.svn.hiload.socialnetwork.utils.ErrorEnum;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
@@ -44,26 +42,10 @@ public class IndexController {
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public Mono<Void> userRegistration(RegistrationForm form, BindingResult errors, ServerHttpResponse response) {
         if (errors.hasErrors()) {
-            return createTemporaryRedirect(response, "/error?code=10");
+            return createTemporaryRedirect(response, "/error?code=" + ErrorEnum.E11.getCode());
         }
         return reactiveService.createUserProfile(form)
-                .timeout(Duration.ofMillis(800), Mono.empty())
-                .flatMap(count -> {
-                    if (count > 0) {
-                        response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
-                        response.getHeaders().setLocation(URI.create("/user/application"));
-
-                        return response.setComplete();
-                    }
-                    return createTemporaryRedirect(response, "/error?code=15");
-                }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
-    }
-
-    private Mono<Void> createTemporaryRedirect(ServerHttpResponse response, String path) {
-        response.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-        response.getHeaders().setLocation(URI.create(path));
-
-        return response.setComplete();
+                .flatMap(errorEnum -> switchRedirect(response, errorEnum, "/user/application"));
     }
 
     @RequestMapping("/user")
@@ -76,46 +58,22 @@ public class IndexController {
 
     @GetMapping("/user/application")
     public Mono<String> userIndexApplication(@AuthenticationPrincipal UserDetails user, final Model model) {
-        return reactiveService.readByLogin(user.getUsername())
-                .timeout(Duration.ofMillis(800), Mono.empty())
-                .flatMap(userProfile -> getUserApplication(userProfile, model))
+        return reactiveService.getUserApplication(user.getUsername())
+                .flatMap(form -> viewApplication(user, model, form))
                 .switchIfEmpty(Mono.just("error"));
     }
 
-    public Mono<String> getUserApplication(final UserProfile user, final Model model) {
-        final ApplicationForm form = new ApplicationForm();
-        form.setUsername(user.getLogin());
-        model.addAttribute("username", user.getLogin());
-
-        return reactiveService.readInfoById(user.getId())
-                .flatMap(userInfo -> fillApplicationForm(form, userInfo, model))
-                .switchIfEmpty(emptyApplicationForm(form, model));
-    }
-
-    private Mono<String> fillApplicationForm(final ApplicationForm form, UserInfo userInfo, final Model model) {
-        form.setFirstName(userInfo.getFirstName());
-        form.setSurName(userInfo.getSurName());
-        form.setAge(userInfo.getAge());
-        form.setSex(userInfo.getSex());
-        form.setCity(userInfo.getCity());
-
-        return reactiveService.readAllByUserInfoId(userInfo.getId())
-                .collect(new InterestsCollectorToForm(form, model, "user/application"))
-                .switchIfEmpty(Mono.just("error"));
-    }
-
-    private Mono<String> emptyApplicationForm(final ApplicationForm form, final Model model) {
+    private Mono<String> viewApplication(@AuthenticationPrincipal UserDetails user, Model model, ApplicationForm form) {
         model.addAttribute("form", form);
+        model.addAttribute("username", user.getUsername());
+
         return Mono.just("user/application");
     }
 
     @PostMapping("/user/application")
     public Mono<Void> userApplication(ApplicationForm form, BindingResult errors, ServerHttpResponse response) {
         if (errors.hasErrors()) {
-            response.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-            response.getHeaders().setLocation(URI.create("/error?code=30"));
-
-            return response.setComplete();
+            return createTemporaryRedirect(response, "/error?code=" + ErrorEnum.E11.getCode());
         }
         return reactiveService.postUserApplication(form)
                 .timeout(Duration.ofMillis(800), Mono.empty())
@@ -126,8 +84,30 @@ public class IndexController {
 
                         return response.setComplete();
                     }
-                    return createTemporaryRedirect(response, "/error?code=15");
-                }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=20"));
+                    return createTemporaryRedirect(response, "/error?code=22");
+                }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=23"));
+    }
+
+    private Mono<Void> switchRedirect(ServerHttpResponse response, ErrorEnum errorEnum, String path) {
+        switch (errorEnum) {
+            case OK: return createPermanentRedirect(response, path);
+            case E1: return createPermanentRedirect(response, "/");
+            default: return createTemporaryRedirect(response, "/error?code=" + errorEnum.getCode());
+        }
+    }
+
+    private Mono<Void> createPermanentRedirect(ServerHttpResponse response, String path) {
+        response.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
+        response.getHeaders().setLocation(URI.create(path));
+
+        return response.setComplete();
+    }
+
+    private Mono<Void> createTemporaryRedirect(ServerHttpResponse response, String path) {
+        response.setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
+        response.getHeaders().setLocation(URI.create(path));
+
+        return response.setComplete();
     }
 
     @RequestMapping("/user/friends")
@@ -151,7 +131,7 @@ public class IndexController {
         return "user/users/profile";
     }
 
-    @GetMapping("/error")
+    @RequestMapping("/error")
     public String error(@RequestParam("code") int code, final Model model) {
         String errorMessage = "Error message by code: " + code;
         model.addAttribute("errorMessage", errorMessage);

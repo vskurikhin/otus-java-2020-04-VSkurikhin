@@ -10,7 +10,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserInfoCustomDao;
 import su.svn.hiload.socialnetwork.model.UserInfo;
-import su.svn.hiload.socialnetwork.services.ClosingConsumer;
+import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
 import java.util.Objects;
 
@@ -64,7 +64,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
         Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
                 .flatMapMany(connection -> executeCreate(userInfo, connection));
         return resultsFlux
-                .flatMap(result -> result.map((row, rowMetadata) -> row.get(0, Integer.class)))
+                .flatMap(Result::getRowsUpdated)
                 .next()
                 .switchIfEmpty(Mono.just(-4));
     }
