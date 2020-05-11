@@ -1,11 +1,9 @@
 package su.svn.hiload.socialnetwork.services;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.Model;
 import org.thymeleaf.spring5.context.webflux.IReactiveDataDriverContextVariable;
 import org.thymeleaf.spring5.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
@@ -18,6 +16,8 @@ import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInfoSignFriend;
 import su.svn.hiload.socialnetwork.model.UserInterest;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
+import su.svn.hiload.socialnetwork.utils.ErrorEnum;
+import su.svn.hiload.socialnetwork.utils.InterestsCollectorToForm;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.Interest;
 import su.svn.hiload.socialnetwork.view.Profile;
@@ -33,28 +33,34 @@ public class ReactiveService {
 
     private BCryptPasswordEncoder encoder;
 
-    private final UserInfoDao userInfoR2dbcDao;
+    private final UserInfoDao userInfoDao;
 
     private final UserInfoSignFriendDao userInfoSignFriendDao;
 
-    private final UserProfileDao userProfileR2dbcDao;
+    private final UserProfileDao userProfileDao;
 
-    private final UserInterestDao userInterestR2dbcDao;
+    private final UserInterestDao userInterestDao;
 
     public ReactiveService(
             @Value("${application.security.strength}") int strength,
-            UserInfoDao userInfoR2dbcDao,
+            UserInfoDao userInfoDao,
             UserInfoSignFriendDao userInfoSignFriendDao,
-            UserProfileDao userProfileR2dbcDao,
-            UserInterestDao userInterestR2dbcDao) {
+            UserProfileDao userProfileDao,
+            UserInterestDao userInterestDao) {
         this.encoder = new BCryptPasswordEncoder(strength);
-        this.userInfoR2dbcDao = userInfoR2dbcDao;
+        this.userInfoDao = userInfoDao;
         this.userInfoSignFriendDao = userInfoSignFriendDao;
-        this.userProfileR2dbcDao = userProfileR2dbcDao;
-        this.userInterestR2dbcDao = userInterestR2dbcDao;
+        this.userProfileDao = userProfileDao;
+        this.userInterestDao = userInterestDao;
+    }
+    public Mono<ErrorEnum> createUserProfile(RegistrationForm form) {
+        return createUserProfile1(form)
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .flatMap(count -> count > 0 ? Mono.just(ErrorEnum.OK) : Mono.just(ErrorEnum.E12))
+                .switchIfEmpty(Mono.just(ErrorEnum.E13));
     }
 
-    public Mono<Integer> createUserProfile(RegistrationForm form) {
+    private Mono<Integer> createUserProfile1(RegistrationForm form) {
         String hash = encoder.encode(form.getPassword());
         UserProfile userProfile = new UserProfile();
         userProfile.setLogin(form.getUsername());
@@ -62,7 +68,7 @@ public class ReactiveService {
         userProfile.setLocked(false);
         userProfile.setExpired(false);
 
-        return userProfileR2dbcDao.create(userProfile);
+        return userProfileDao.create(userProfile);
     }
 
     public IReactiveDataDriverContextVariable getAllUsers(UserDetails user, Consumer<Long> consumer) {
@@ -88,27 +94,19 @@ public class ReactiveService {
                 .timeout(Duration.ofMillis(800), Mono.empty())
                 .flatMapMany(userProfile -> {
                     consumer.accept(userProfile.getId());
-                    return userInfoR2dbcDao.readAllFriends(userProfile.getId());
+                    return userInfoDao.readAllFriends(userProfile.getId());
                 })
                 .switchIfEmpty(Flux.empty());
     }
 
-    public IReactiveDataDriverContextVariable createReactiveDataDriverContextVariableFluxEmpty() {
-        return new ReactiveDataDriverContextVariable(Flux.empty(), 1);
-    }
-
-    public IReactiveDataDriverContextVariable getInterests(long id) {
-        return new ReactiveDataDriverContextVariable(userInterestR2dbcDao.readAllByUserInfoId(id), 1);
-    }
-
     public Mono<Profile> readById(long id) {
-        return userInfoR2dbcDao.readFirstById(id)
+        return userInfoDao.readFirstById(id)
                 .timeout(Duration.ofMillis(800), Mono.empty())
                 .map(userInfo -> convertUserInfo(userInfo, id));
     }
 
     public Mono<UserProfile> readByLogin(String login) {
-        return userProfileR2dbcDao.findFirstByLogin(login);
+        return userProfileDao.findFirstByLogin(login);
     }
 
     private Profile convertUserInfo(UserInfo userInfo, long id) {
@@ -119,7 +117,7 @@ public class ReactiveService {
         profile.setSex(userInfo.getSex());
         profile.setCity(userInfo.getCity());
 
-        userInterestR2dbcDao.readAllByUserInfoId(id)
+        userInterestDao.readAllByUserInfoId(id)
                 .collectList()
                 .map(this::streamConvertUserInterest)
                 .subscribe(profile::setInterests);
@@ -142,15 +140,15 @@ public class ReactiveService {
     }
 
     public Mono<UserInfo> readInfoById(Long id) {
-        return userInfoR2dbcDao.readFirstById(id);
+        return userInfoDao.readFirstById(id);
     }
 
     public Flux<UserInterest> readAllByUserInfoId(Long id) {
-        return userInterestR2dbcDao.readAllByUserInfoId(id);
+        return userInterestDao.readAllByUserInfoId(id);
     }
 
     public Mono<Integer> postUserApplication(ApplicationForm form) {
-        return userProfileR2dbcDao.findFirstByLogin(form.getUsername())
+        return userProfileDao.findFirstByLogin(form.getUsername())
                 .flatMap(userProfile -> postUserApplication(form, userProfile))
                 .switchIfEmpty(Mono.just(-1));
     }
@@ -164,12 +162,40 @@ public class ReactiveService {
         userInfo.setSex(form.getSex());
         userInfo.setCity(form.getCity());
 
-        return userInfoR2dbcDao.existsById(userProfile.getId())
+        return userInfoDao.existsById(userProfile.getId())
                 .flatMap(exists -> updateOrCreate(userInfo, exists))
                 .switchIfEmpty(Mono.just(-2));
     }
 
     private Mono<Integer> updateOrCreate(UserInfo userInfo, Boolean exists) {
-        return exists ? userInfoR2dbcDao.update(userInfo) : userInfoR2dbcDao.create(userInfo);
+        return exists ? userInfoDao.update(userInfo) : userInfoDao.create(userInfo);
+    }
+
+    public Mono<ApplicationForm> getUserApplication(String username) {
+        return readByLogin(username)
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .flatMap(this::getUserApplication)
+                .switchIfEmpty(Mono.empty());
+    }
+
+    public Mono<ApplicationForm> getUserApplication(final UserProfile user) {
+        final ApplicationForm form = new ApplicationForm();
+        form.setUsername(user.getLogin());
+
+        return readInfoById(user.getId())
+                .flatMap(userInfo -> fillApplicationForm(form, userInfo))
+                .switchIfEmpty(Mono.just(form));
+    }
+
+    private Mono<ApplicationForm> fillApplicationForm(final ApplicationForm form, UserInfo userInfo) {
+        form.setFirstName(userInfo.getFirstName());
+        form.setSurName(userInfo.getSurName());
+        form.setAge(userInfo.getAge());
+        form.setSex(userInfo.getSex());
+        form.setCity(userInfo.getCity());
+
+        return readAllByUserInfoId(userInfo.getId())
+                .collect(new InterestsCollectorToForm(form))
+                .switchIfEmpty(Mono.just(form));
     }
 }

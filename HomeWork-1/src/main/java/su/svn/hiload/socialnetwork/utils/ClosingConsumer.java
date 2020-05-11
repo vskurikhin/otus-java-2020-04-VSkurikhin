@@ -1,4 +1,4 @@
-package su.svn.hiload.socialnetwork.services;
+package su.svn.hiload.socialnetwork.utils;
 
 import io.r2dbc.spi.Connection;
 import org.reactivestreams.Subscription;

@@ -8,7 +8,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserProfileCustomDao;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
-import su.svn.hiload.socialnetwork.services.ClosingConsumer;
+import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
 import java.util.Objects;
 
@@ -41,7 +41,7 @@ public class UserProfileR2dbcDao implements UserProfileCustomDao {
         Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
                 .flatMapMany(connection -> executeCreate(userProfile, connection));
         return resultsFlux
-                .flatMap(result -> result.map((row, rowMetadata) -> row.get(0, Integer.class)))
+                .flatMap(Result::getRowsUpdated)
                 .next()
                 .switchIfEmpty(Mono.just(-1));
     }

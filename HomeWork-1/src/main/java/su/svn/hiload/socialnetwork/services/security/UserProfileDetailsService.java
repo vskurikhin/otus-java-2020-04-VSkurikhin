@@ -7,6 +7,8 @@ import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.UserProfileDao;
 import su.svn.hiload.socialnetwork.model.security.UserProfileDetails;
 
+import java.time.Duration;
+
 @Service
 public class UserProfileDetailsService implements ReactiveUserDetailsService {
 
@@ -19,6 +21,7 @@ public class UserProfileDetailsService implements ReactiveUserDetailsService {
     @Override
     public Mono<UserDetails> findByUsername(String username) {
         return userProfileDao.readFirstByLogin(username)
+                .timeout(Duration.ofMinutes(2), Mono.empty())
                 .flatMap(profile -> Mono.just(new UserProfileDetails(profile)));
     }
 }
