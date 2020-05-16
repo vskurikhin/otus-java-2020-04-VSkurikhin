@@ -18,6 +18,7 @@ import su.svn.hiload.socialnetwork.model.UserInterest;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.utils.ErrorEnum;
 import su.svn.hiload.socialnetwork.utils.InterestsCollectorToForm;
+import su.svn.hiload.socialnetwork.utils.ListCollectorToSizeInteger;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.Interest;
 import su.svn.hiload.socialnetwork.view.Profile;
@@ -27,6 +28,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static su.svn.hiload.socialnetwork.utils.ErrorCode.*;
 
 @Service
 public class ReactiveService {
@@ -53,6 +56,7 @@ public class ReactiveService {
         this.userProfileDao = userProfileDao;
         this.userInterestDao = userInterestDao;
     }
+
     public Mono<ErrorEnum> createUserProfile(RegistrationForm form) {
         return createUserProfile1(form)
                 .timeout(Duration.ofMillis(800), Mono.empty())
@@ -86,17 +90,19 @@ public class ReactiveService {
     }
 
     public IReactiveDataDriverContextVariable getAllFriends(UserDetails user, Consumer<Long> consumer) {
-        return new ReactiveDataDriverContextVariable(getAllFriendsWithConsumeer(user, consumer));
+        return new ReactiveDataDriverContextVariable(getAllFriendsWithConsumer(user, consumer));
     }
 
-    private Flux<UserInfo> getAllFriendsWithConsumeer(UserDetails user, Consumer<Long> consumer) {
+    private Flux<UserInfo> getAllFriendsWithConsumer(UserDetails user, final Consumer<Long> consumer) {
         return readByLogin(user.getUsername())
                 .timeout(Duration.ofMillis(800), Mono.empty())
-                .flatMapMany(userProfile -> {
-                    consumer.accept(userProfile.getId());
-                    return userInfoDao.readAllFriends(userProfile.getId());
-                })
+                .flatMapMany(userProfile -> readAllFriends(userProfile, consumer))
                 .switchIfEmpty(Flux.empty());
+    }
+
+    private Flux<UserInfo> readAllFriends(UserProfile userProfile, Consumer<Long> consumer) {
+        consumer.accept(userProfile.getId());
+        return userInfoDao.readAllFriends(userProfile.getId());
     }
 
     public Mono<Profile> readById(long id) {
@@ -147,13 +153,14 @@ public class ReactiveService {
         return userInterestDao.readAllByUserInfoId(id);
     }
 
-    public Mono<Integer> postUserApplication(ApplicationForm form) {
+    public Mono<ErrorEnum> postUserApplication(final ApplicationForm form) {
         return userProfileDao.findFirstByLogin(form.getUsername())
+                .timeout(Duration.ofMillis(800), Mono.empty())
                 .flatMap(userProfile -> postUserApplication(form, userProfile))
-                .switchIfEmpty(Mono.just(-1));
+                .switchIfEmpty(Mono.just(ErrorEnum.E99));
     }
 
-    private Mono<Integer> postUserApplication(ApplicationForm form, UserProfile userProfile) {
+    private Mono<ErrorEnum> postUserApplication(final ApplicationForm form, final  UserProfile userProfile) {
         UserInfo userInfo = new UserInfo();
         userInfo.setId(userProfile.getId());
         userInfo.setFirstName(form.getFirstName());
@@ -163,8 +170,35 @@ public class ReactiveService {
         userInfo.setCity(form.getCity());
 
         return userInfoDao.existsById(userProfile.getId())
+                .timeout(Duration.ofMillis(800), Mono.empty())
                 .flatMap(exists -> updateOrCreate(userInfo, exists))
-                .switchIfEmpty(Mono.just(-2));
+                .flatMap(count -> saveInterests(form, userProfile, count))
+                .flatMap(this::switchErrorCodeByInteger)
+                .switchIfEmpty(Mono.just(ErrorEnum.E99));
+    }
+
+    private Mono<Integer> saveInterests(ApplicationForm form, UserProfile userProfile, Integer count) {
+        return count > -1 ? saveInterests(form.getInterests(), userProfile.getId()) : Mono.just(count);
+    }
+
+    private Mono<Integer> saveInterests(List<Interest> interests, long userId) {
+        List<UserInterest> userInterests = interests.stream()
+                .map(interest -> new UserInterest(interest.getId(), userId, interest.getInterest()))
+                .collect(Collectors.toList());
+        return userInterestDao.saveAll(userInterests)
+                .timeout(Duration.ofMillis(800), Mono.empty())
+                .collect(new ListCollectorToSizeInteger<>());
+    }
+
+    private Mono<ErrorEnum> switchErrorCodeByInteger(int count) {
+        if (count > -1) {
+            return Mono.just(ErrorEnum.OK);
+        }
+        switch (count) {
+            case CREATE_SWITCH_IF_EMPTY: return Mono.just(ErrorEnum.E14);
+            case UPDATE_SWITCH_IF_EMPTY: return Mono.just(ErrorEnum.E15);
+            default: return Mono.empty();
+        }
     }
 
     private Mono<Integer> updateOrCreate(UserInfo userInfo, Boolean exists) {
