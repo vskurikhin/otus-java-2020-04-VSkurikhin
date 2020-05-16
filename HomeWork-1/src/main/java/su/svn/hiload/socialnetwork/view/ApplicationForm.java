@@ -1,5 +1,6 @@
 package su.svn.hiload.socialnetwork.view;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ApplicationForm {

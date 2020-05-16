@@ -9,11 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.utils.ErrorEnum;
@@ -21,6 +17,7 @@ import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
 import java.net.URI;
+import java.util.ArrayList;
 
 @Controller
 public class IndexController {
@@ -53,6 +50,14 @@ public class IndexController {
         response.getHeaders().setLocation(URI.create("/user/application"));
 
         return response.setComplete();
+    }
+
+    @ModelAttribute("form")
+    public ApplicationForm getForm() {
+        ApplicationForm form = new ApplicationForm();
+        form.setInterests(new ArrayList<>());
+
+        return form;
     }
 
     @GetMapping("/user/application")
