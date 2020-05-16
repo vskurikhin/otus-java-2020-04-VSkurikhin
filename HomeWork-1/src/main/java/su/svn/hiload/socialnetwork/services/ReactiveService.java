@@ -178,6 +178,9 @@ public class ReactiveService {
     }
 
     private Mono<Integer> saveInterests(ApplicationForm form, UserProfile userProfile, Integer count) {
+        if (null == form.getInterests()) {
+            return Mono.just(0);
+        }
         return count > -1 ? saveInterests(form.getInterests(), userProfile.getId()) : Mono.just(count);
     }
 
