@@ -12,6 +12,8 @@ import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
 import java.util.Objects;
 
+import static su.svn.hiload.socialnetwork.utils.ErrorCode.CREATE_SWITCH_IF_EMPTY;
+
 @Repository("userProfileR2dbcDao")
 public class UserProfileR2dbcDao implements UserProfileCustomDao {
 
@@ -43,7 +45,7 @@ public class UserProfileR2dbcDao implements UserProfileCustomDao {
         return resultsFlux
                 .flatMap(Result::getRowsUpdated)
                 .next()
-                .switchIfEmpty(Mono.just(-1));
+                .switchIfEmpty(Mono.just(CREATE_SWITCH_IF_EMPTY));
     }
 
     private Flux<? extends Result> executeCreate(UserProfile userProfile, Connection connection) {

@@ -14,6 +14,9 @@ import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
 import java.util.Objects;
 
+import static su.svn.hiload.socialnetwork.utils.ErrorCode.CREATE_SWITCH_IF_EMPTY;
+import static su.svn.hiload.socialnetwork.utils.ErrorCode.UPDATE_SWITCH_IF_EMPTY;
+
 @Repository("userInfoR2dbcDao")
 public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
@@ -60,13 +63,12 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Mono<Integer> create(UserInfo userInfo) {
-        System.err.println("userInfo2 = " + userInfo);
         Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
                 .flatMapMany(connection -> executeCreate(userInfo, connection));
         return resultsFlux
                 .flatMap(Result::getRowsUpdated)
                 .next()
-                .switchIfEmpty(Mono.just(-4));
+                .switchIfEmpty(Mono.just(CREATE_SWITCH_IF_EMPTY));
     }
 
     private Flux<? extends Result> executeCreate(UserInfo userInfo, Connection connection) {
@@ -150,7 +152,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
                 .flatMapMany(connection -> executeUpdate(userInfo, connection));
         return resultsFlux.flatMap(Result::getRowsUpdated)
                 .next()
-                .switchIfEmpty(Mono.just(-3));
+                .switchIfEmpty(Mono.just(UPDATE_SWITCH_IF_EMPTY));
     }
 
     private Flux<? extends Result> executeUpdate(UserInfo userInfo, Connection connection) {

@@ -21,7 +21,6 @@ import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
 
 import java.net.URI;
-import java.time.Duration;
 
 @Controller
 public class IndexController {
@@ -76,16 +75,7 @@ public class IndexController {
             return createTemporaryRedirect(response, "/error?code=" + ErrorEnum.E11.getCode());
         }
         return reactiveService.postUserApplication(form)
-                .timeout(Duration.ofMillis(800), Mono.empty())
-                .flatMap(count -> {
-                    if (count > -1) {
-                        response.setStatusCode(HttpStatus.PERMANENT_REDIRECT);
-                        response.getHeaders().setLocation(URI.create("/user/users"));
-
-                        return response.setComplete();
-                    }
-                    return createTemporaryRedirect(response, "/error?code=22");
-                }).switchIfEmpty(createTemporaryRedirect(response, "/error?code=23"));
+                .flatMap(errorEnum -> switchRedirect(response, errorEnum, "/user/users"));
     }
 
     private Mono<Void> switchRedirect(ServerHttpResponse response, ErrorEnum errorEnum, String path) {
