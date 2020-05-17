@@ -1,0 +1,26 @@
+top - 16:42:43 up 261 days, 30 min,  2 users,  load average: 12,43, 11,51, 8,23
+Tasks: 180 total,  12 running, 168 sleeping,   0 stopped,   0 zombie
+%Cpu0  : 72,9 us, 12,9 sy,  0,0 ni,  3,6 id,  0,0 wa,  0,0 hi,  6,9 si,  3,6 st
+%Cpu1  : 83,1 us, 12,9 sy,  0,0 ni,  1,0 id,  0,0 wa,  0,0 hi,  2,6 si,  0,3 st
+%Cpu2  : 81,8 us, 12,9 sy,  0,0 ni,  1,7 id,  0,0 wa,  0,0 hi,  2,3 si,  1,3 st
+%Cpu3  : 82,9 us, 12,2 sy,  0,0 ni,  1,3 id,  0,3 wa,  0,0 hi,  3,0 si,  0,3 st
+KiB Mem :  9009612 total,   579476 free,  2023260 used,  6406876 buff/cache
+KiB Swap: 10485756 total, 10411772 free,    73984 used.  6289788 avail Mem 
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+29257 vnsk      20   0 6112808   1,5g  24240 S 252,6 17,4  76:52.51 java
+25672 nginx     20   0   94132   9544   6060 R  19,2  0,1   6:08.14 nginx
+25675 nginx     20   0   94264   9416   5900 R  17,5  0,1   6:23.99 nginx
+25673 nginx     20   0   94036   9432   6060 R  16,6  0,1   7:41.66 nginx
+25674 nginx     20   0   93836   9096   6032 R  16,6  0,1   6:02.63 nginx
+31414 postgres  20   0  368192  10792   5628 R   8,3  0,1   0:20.94 postmaster
+31407 postgres  20   0  367856  10468   5624 S   7,9  0,1   0:27.41 postmaster
+31394 postgres  20   0  367792  10244   5644 R   7,3  0,1   0:30.81 postmaster
+31393 postgres  20   0  367012  10080   5640 S   7,0  0,1   0:30.46 postmaster
+29653 postgres  20   0  368324  11772   6292 S   6,6  0,1   1:18.18 postmaster
+29725 postgres  20   0  367716  10548   5636 R   5,3  0,1   1:17.61 postmaster
+30689 postgres  20   0  368104  10580   5476 S   5,3  0,1   0:54.09 postmaster
+30468 postgres  20   0  367860  10724   5628 S   4,6  0,1   1:05.55 postmaster
+30825 postgres  20   0  368124  10628   5628 R   4,0  0,1   0:49.72 postmaster
+29719 postgres  20   0  368068  10536   5692 R   3,3  0,1   1:42.65 postmaster
+31399 postgres  20   0  367388   9988   5644 R   3,0  0,1   0:30.01 postmaster
