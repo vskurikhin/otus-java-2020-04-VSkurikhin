@@ -30,6 +30,7 @@ public class SecurityConfiguration {
                         "/fonts/**",
                         "/img/**",
                         "/js/**",
+                        "/public/**",
                         "/webjars/**").permitAll()
                 .pathMatchers("/application").hasRole("USER")
                 .pathMatchers("/user/**").hasRole("USER")

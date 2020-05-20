@@ -19,10 +19,7 @@ import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.utils.ErrorEnum;
 import su.svn.hiload.socialnetwork.utils.InterestsCollectorToForm;
 import su.svn.hiload.socialnetwork.utils.ListCollectorToSizeInteger;
-import su.svn.hiload.socialnetwork.view.ApplicationForm;
-import su.svn.hiload.socialnetwork.view.Interest;
-import su.svn.hiload.socialnetwork.view.Profile;
-import su.svn.hiload.socialnetwork.view.RegistrationForm;
+import su.svn.hiload.socialnetwork.view.*;
 
 import java.time.Duration;
 import java.util.List;
@@ -36,6 +33,10 @@ public class ReactiveService {
 
     private BCryptPasswordEncoder encoder;
 
+    private final int duration;
+
+    private final int limit;
+
     private final UserInfoDao userInfoDao;
 
     private final UserInfoSignFriendDao userInfoSignFriendDao;
@@ -44,13 +45,18 @@ public class ReactiveService {
 
     private final UserInterestDao userInterestDao;
 
+
     public ReactiveService(
             @Value("${application.security.strength}") int strength,
+            @Value("${application.reactive.duration}") int duration,
+            @Value("${application.reactive.limit}") int limit,
             UserInfoDao userInfoDao,
             UserInfoSignFriendDao userInfoSignFriendDao,
             UserProfileDao userProfileDao,
             UserInterestDao userInterestDao) {
         this.encoder = new BCryptPasswordEncoder(strength);
+        this.duration = duration;
+        this.limit = limit;
         this.userInfoDao = userInfoDao;
         this.userInfoSignFriendDao = userInfoSignFriendDao;
         this.userProfileDao = userProfileDao;
@@ -59,7 +65,7 @@ public class ReactiveService {
 
     public Mono<ErrorEnum> createUserProfile(RegistrationForm form) {
         return createUserProfile1(form)
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(3*duration), Mono.empty())
                 .flatMap(count -> count > 0 ? Mono.just(ErrorEnum.OK) : Mono.just(ErrorEnum.E12))
                 .switchIfEmpty(Mono.just(ErrorEnum.E13));
     }
@@ -76,12 +82,12 @@ public class ReactiveService {
     }
 
     public IReactiveDataDriverContextVariable getAllUsers(UserDetails user, Consumer<Long> consumer) {
-        return new ReactiveDataDriverContextVariable(getAllUsersWithConsumeer(user, consumer));
+        return new ReactiveDataDriverContextVariable(getAllUsersWithConsumer(user, consumer));
     }
 
-    private Flux<UserInfoSignFriend> getAllUsersWithConsumeer(UserDetails user, Consumer<Long> consumer) {
+    private Flux<UserInfoSignFriend> getAllUsersWithConsumer(UserDetails user, Consumer<Long> consumer) {
         return readByLogin(user.getUsername())
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .flatMapMany(userProfile -> {
                     consumer.accept(userProfile.getId());
                     return userInfoSignFriendDao.readAllUsersSignFriend(userProfile.getId());
@@ -95,7 +101,7 @@ public class ReactiveService {
 
     private Flux<UserInfo> getAllFriendsWithConsumer(UserDetails user, final Consumer<Long> consumer) {
         return readByLogin(user.getUsername())
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .flatMapMany(userProfile -> readAllFriends(userProfile, consumer))
                 .switchIfEmpty(Flux.empty());
     }
@@ -107,11 +113,11 @@ public class ReactiveService {
 
     public Mono<Profile> readById(long id) {
         return userInfoDao.readFirstById(id)
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .map(userInfo -> convertUserInfo(userInfo, id));
     }
 
-    public Mono<UserProfile> readByLogin(String login) {
+    private Mono<UserProfile> readByLogin(String login) {
         return userProfileDao.findFirstByLogin(login);
     }
 
@@ -145,17 +151,17 @@ public class ReactiveService {
         return interest;
     }
 
-    public Mono<UserInfo> readInfoById(Long id) {
+    private Mono<UserInfo> readInfoById(Long id) {
         return userInfoDao.readFirstById(id);
     }
 
-    public Flux<UserInterest> readAllByUserInfoId(Long id) {
+    private Flux<UserInterest> readAllByUserInfoId(Long id) {
         return userInterestDao.readAllByUserInfoId(id);
     }
 
     public Mono<ErrorEnum> postUserApplication(final ApplicationForm form) {
         return userProfileDao.findFirstByLogin(form.getUsername())
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .flatMap(userProfile -> postUserApplication(form, userProfile))
                 .switchIfEmpty(Mono.just(ErrorEnum.E99));
     }
@@ -170,7 +176,7 @@ public class ReactiveService {
         userInfo.setCity(form.getCity());
 
         return userInfoDao.existsById(userProfile.getId())
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .flatMap(exists -> updateOrCreate(userInfo, exists))
                 .flatMap(count -> saveInterests(form, userProfile, count))
                 .flatMap(this::switchErrorCodeByInteger)
@@ -189,7 +195,7 @@ public class ReactiveService {
                 .map(interest -> new UserInterest(interest.getId(), userId, interest.getInterest()))
                 .collect(Collectors.toList());
         return userInterestDao.saveAll(userInterests)
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .collect(new ListCollectorToSizeInteger<>());
     }
 
@@ -210,16 +216,17 @@ public class ReactiveService {
 
     public Mono<ApplicationForm> getUserApplication(String username) {
         return readByLogin(username)
-                .timeout(Duration.ofMillis(800), Mono.empty())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .flatMap(this::getUserApplication)
                 .switchIfEmpty(Mono.empty());
     }
 
-    public Mono<ApplicationForm> getUserApplication(final UserProfile user) {
+    private Mono<ApplicationForm> getUserApplication(final UserProfile user) {
         final ApplicationForm form = new ApplicationForm();
         form.setUsername(user.getLogin());
 
         return readInfoById(user.getId())
+                .timeout(Duration.ofMillis(duration), Mono.empty())
                 .flatMap(userInfo -> fillApplicationForm(form, userInfo))
                 .switchIfEmpty(Mono.just(form));
     }
@@ -234,5 +241,75 @@ public class ReactiveService {
         return readAllByUserInfoId(userInfo.getId())
                 .collect(new InterestsCollectorToForm(form))
                 .switchIfEmpty(Mono.just(form));
+    }
+
+    public Flux<UserInfo> searchUsers(String firstName, String surName) {
+        if (firstName.length() > 0 && surName.length() > 0) {
+            System.err.println("firstName = " + firstName);
+            System.err.println("surName = " + surName);
+            return userInfoDao.searchAllByFirstNameAndSurName(firstName, surName)
+                    .take(10)
+                    .timeout(Duration.ofMillis(duration), Mono.empty());
+        } else if (firstName.length() > 0) {
+            System.err.println("firstName = " + firstName);
+            return userInfoDao.searchAllByFirstName(firstName)
+                    .take(10)
+                    .timeout(Duration.ofMillis(duration), Mono.empty());
+        } else if (surName.length() > 0) {
+            System.err.println("surName = " + surName);
+            return userInfoDao.searchAllBySurName(surName)
+                    .take(10)
+                    .timeout(Duration.ofMillis(duration), Mono.empty());
+        }
+        return Flux.empty();
+    }
+
+    public IReactiveDataDriverContextVariable searchAllUsers(String username, String firstName, String surName) {
+        return new ReactiveDataDriverContextVariable(searchUsersSignFriend(username, firstName, surName));
+    }
+
+    private Flux<UserInfoSignFriend> searchUsersSignFriend(String username, String firstName, String surName) {
+        if (firstName.length() > 0 && surName.length() > 0) {
+            System.err.println("firstName = " + firstName);
+            System.err.println("surName = " + surName);
+
+            return readByLogin(username)
+                    .timeout(Duration.ofMillis(duration), Mono.empty())
+                    .flatMapMany(userProfile -> searchAllByFirstNameAndSurName(userProfile.getId(), firstName, surName))
+                    .switchIfEmpty(Flux.empty());
+        } else if (firstName.length() > 0) {
+            System.err.println("firstName = " + firstName);
+
+            return readByLogin(username)
+                    .timeout(Duration.ofMillis(duration), Mono.empty())
+                    .flatMapMany(userProfile -> searchAllByFirstName(userProfile.getId(), firstName))
+                    .switchIfEmpty(Flux.empty());
+        } else if (surName.length() > 0) {
+            System.err.println("surName = " + surName);
+
+            return readByLogin(username)
+                    .timeout(Duration.ofMillis(duration), Mono.empty())
+                    .flatMapMany(userProfile -> getTimeout(userProfile.getId(), surName))
+                    .switchIfEmpty(Flux.empty());
+        }
+        return Flux.empty();
+    }
+
+    private Flux<UserInfoSignFriend> getTimeout(long id, String surName) {
+        return userInfoSignFriendDao.searchAllBySurName(id, surName)
+                .take(limit)
+                .timeout(Duration.ofMillis(duration), Mono.empty());
+    }
+
+    private Flux<UserInfoSignFriend> searchAllByFirstName(long id, String firstName) {
+        return userInfoSignFriendDao.searchAllByFirstName(id, firstName)
+                .take(limit)
+                .timeout(Duration.ofMillis(duration), Mono.empty());
+    }
+
+    private Flux<UserInfoSignFriend> searchAllByFirstNameAndSurName(long id, String firstName, String surName) {
+        return userInfoSignFriendDao.searchAllByFirstNameAndSurName(id, firstName, surName)
+                .take(limit)
+                .timeout(Duration.ofMillis(duration), Mono.empty());
     }
 }

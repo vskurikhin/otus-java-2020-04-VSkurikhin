@@ -15,6 +15,7 @@ import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.utils.ErrorEnum;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
+import su.svn.hiload.socialnetwork.view.SearchForm;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -80,7 +81,7 @@ public class IndexController {
             return createTemporaryRedirect(response, "/error?code=" + ErrorEnum.E11.getCode());
         }
         return reactiveService.postUserApplication(form)
-                .flatMap(errorEnum -> switchRedirect(response, errorEnum, "/user/users"));
+                .flatMap(errorEnum -> switchRedirect(response, errorEnum, "/user/search-users"));
     }
 
     private Mono<Void> switchRedirect(ServerHttpResponse response, ErrorEnum errorEnum, String path) {
@@ -116,6 +117,7 @@ public class IndexController {
         model.addAttribute("users", reactiveService.getAllUsers(user, id -> injectUserIdToModel(model, id)));
         return "user/users/index";
     }
+
     private void injectUserIdToModel(final Model model, Long id) {
         model.addAttribute("id", id);
     }
@@ -124,6 +126,21 @@ public class IndexController {
     public String userIndexProfile(@AuthenticationPrincipal UserDetails user, final Model model, @RequestParam("id") long id) {
         model.addAttribute("user", reactiveService.readById(id));
         return "user/users/profile";
+    }
+
+    @GetMapping("/user/search-users")
+    public String searchUsers(
+            @AuthenticationPrincipal UserDetails user,
+            final Model model,
+            @RequestParam(value = "firstName", defaultValue = "") String firstName,
+            @RequestParam(value = "surName", defaultValue = "") String surName) {
+        model.addAttribute("users", reactiveService.searchAllUsers(user.getUsername(), firstName, surName));
+        return "user/users/index";
+    }
+
+    @PostMapping("/user/search-users")
+    public String searchUsers() {
+        return "user/search/index";
     }
 
     @RequestMapping("/error")

@@ -6,6 +6,8 @@ application:
       host: ${DB_HOST:localhost}
       port: ${DB_PORT:3306}
       database: ${DB_NAME:db}
+  reactive.duration: 10000
+  reactive.limit: 10000
   locale: "en_US"
   rest:
     user: "/user/api"
