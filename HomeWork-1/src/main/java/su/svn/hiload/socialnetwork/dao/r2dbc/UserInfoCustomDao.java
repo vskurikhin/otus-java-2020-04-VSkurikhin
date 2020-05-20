@@ -17,4 +17,10 @@ public interface UserInfoCustomDao {
     Mono<UserInfo> addFriend(long id, long friendId);
 
     Mono<Integer> update(UserInfo userInfo);
+
+    Flux<UserInfo> searchAllByFirstName(String firstName);
+
+    Flux<UserInfo> searchAllBySurName(String surName);
+
+    Flux<UserInfo> searchAllByFirstNameAndSurName(String firstName, String surName);
 }

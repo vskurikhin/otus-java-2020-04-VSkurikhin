@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.UserInfoSignFriendDao;
+import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInfoSignFriend;
 import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
@@ -32,6 +33,24 @@ public class UserInfoSignFriendR2dbcDao implements UserInfoSignFriendDao {
             " FROM user_info u " +
             " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
             " WHERE u.id <> ? ";
+
+    private final static String SEARCH_ALL_BY_FIRST_NAME = "SELECT " +
+            " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, f.id AS friend " +
+            " FROM user_info u " +
+            " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
+            " WHERE u.first_name LIKE ? ";
+
+    private final static String SEARCH_ALL_BY_SUR_NAME = "SELECT " +
+            " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, f.id AS friend " +
+            " FROM user_info u " +
+            " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
+            " WHERE u.sur_name LIKE ? ";
+
+    private final static String SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME = "SELECT " +
+            " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, f.id AS friend " +
+            " FROM user_info u " +
+            " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
+            " WHERE u.first_name LIKE ? AND u.sur_name LIKE ?";
 
     public UserInfoSignFriendR2dbcDao(ConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
@@ -66,6 +85,60 @@ public class UserInfoSignFriendR2dbcDao implements UserInfoSignFriendDao {
                 .bind(1, id)
                 .execute())
                 .doOnSubscribe(new ClosingConsumer(connection));
+    }
+
+    @Override
+    public Flux<UserInfoSignFriend> searchAllByFirstName(long id, String firstName) {
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> executeSearchAllByFirstName(id, firstName, connection));
+        return liftMapResultToUserInfo(resultsFlux);
+    }
+
+    private Flux<? extends Result> executeSearchAllByFirstName(long id, String firstName, Connection connection) {
+        return Flux.from(connection.createStatement(SEARCH_ALL_BY_FIRST_NAME)
+                .bind(0, id)
+                .bind(1, valueWithWildCard(firstName))
+                .execute())
+                .doOnSubscribe(new ClosingConsumer(connection));
+    }
+
+    @Override
+    public Flux<UserInfoSignFriend> searchAllBySurName(long id, String surName) {
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> executeSearchAllBySurName(id, surName, connection));
+        return liftMapResultToUserInfo(resultsFlux);
+    }
+
+    private Flux<? extends Result> executeSearchAllBySurName(long id, String surName, Connection connection) {
+        return Flux.from(connection.createStatement(SEARCH_ALL_BY_SUR_NAME)
+                .bind(0, id)
+                .bind(1, valueWithWildCard(surName))
+                .execute())
+                .doOnSubscribe(new ClosingConsumer(connection));
+    }
+
+    @Override
+    public Flux<UserInfoSignFriend> searchAllByFirstNameAndSurName(long id, String firstName, String surName) {
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> executeSearchAllByFirstNameAndSurName(id, firstName, surName, connection));
+        return liftMapResultToUserInfo(resultsFlux);
+    }
+
+    private Flux<? extends Result> executeSearchAllByFirstNameAndSurName(
+            long id,
+            String firstName,
+            String surName,
+            Connection connection) {
+        return Flux.from(connection.createStatement(SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME)
+                .bind(0, id)
+                .bind(1, valueWithWildCard(firstName))
+                .bind(2, valueWithWildCard(surName))
+                .execute())
+                .doOnSubscribe(new ClosingConsumer(connection));
+    }
+
+    private String valueWithWildCard(String value) {
+        return '%' + value + '%';
     }
 
     private Flux<UserInfoSignFriend> liftMapResultToUserInfo(Flux<Result> resultsFlux) {

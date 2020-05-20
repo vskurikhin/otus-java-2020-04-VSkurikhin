@@ -30,8 +30,8 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     private final static String READ_BY_ID = "SELECT " +
             " id, first_name, sur_name, age, sex, city " +
-            " FROM user_info " +
-            " WHERE id = ? ";
+            " from user_info " +
+            " where id = ? ";
 
     private final static String READ_ALL_USERS_BY_ID = "SELECT " +
             " id, first_name, sur_name, age, sex, city " +
@@ -43,6 +43,21 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
             " FROM user_info u " +
             " INNER JOIN user_friends f ON u.id = f.friend_info_id " +
             " WHERE f.user_info_id = ? ";
+
+    private final static String SEARCH_ALL_BY_FIRST_NAME = "SELECT " +
+            " id, first_name, sur_name, age, sex, city " +
+            " FROM user_info " +
+            " WHERE first_name LIKE ? ";
+
+    private final static String SEARCH_ALL_BY_SUR_NAME = "SELECT " +
+            " id, first_name, sur_name, age, sex, city " +
+            " FROM user_info " +
+            " WHERE sur_name LIKE ? ";
+
+    private final static String SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME = "SELECT " +
+            " id, first_name, sur_name, age, sex, city " +
+            " FROM user_info " +
+            " WHERE first_name LIKE ? AND sur_name LIKE ?";
 
     private final static String UPDATE = "UPDATE " +
             " user_info SET " +
@@ -153,6 +168,56 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
         return resultsFlux.flatMap(Result::getRowsUpdated)
                 .next()
                 .switchIfEmpty(Mono.just(UPDATE_SWITCH_IF_EMPTY));
+    }
+
+    @Override
+    public Flux<UserInfo> searchAllByFirstName(String firstName) {
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> executeSearchAllByFirstName(firstName, connection));
+        return liftMapResultToUserInfo(resultsFlux);
+    }
+
+    private Flux<? extends Result> executeSearchAllByFirstName(String firstName, Connection connection) {
+        return Flux.from(connection.createStatement(SEARCH_ALL_BY_FIRST_NAME)
+                .bind(0, valueWithWildCard(firstName))
+                .execute())
+                .doOnSubscribe(new ClosingConsumer(connection));
+    }
+
+    @Override
+    public Flux<UserInfo> searchAllBySurName(String surName) {
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> executeSearchAllBySurName(surName, connection));
+        return liftMapResultToUserInfo(resultsFlux);
+    }
+
+    private Flux<? extends Result> executeSearchAllBySurName(String surName, Connection connection) {
+        return Flux.from(connection.createStatement(SEARCH_ALL_BY_SUR_NAME)
+                .bind(0, valueWithWildCard(surName))
+                .execute())
+                .doOnSubscribe(new ClosingConsumer(connection));
+    }
+
+    @Override
+    public Flux<UserInfo> searchAllByFirstNameAndSurName(String firstName, String surName) {
+        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+                .flatMapMany(connection -> executeSearchAllByFirstNameAndSurName(firstName, surName, connection));
+        return liftMapResultToUserInfo(resultsFlux);
+    }
+
+    private Flux<? extends Result> executeSearchAllByFirstNameAndSurName(
+            String firstName,
+            String surName,
+            Connection connection) {
+        return Flux.from(connection.createStatement(SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME)
+                .bind(0, valueWithWildCard(firstName))
+                .bind(1, valueWithWildCard(surName))
+                .execute())
+                .doOnSubscribe(new ClosingConsumer(connection));
+    }
+
+    private String valueWithWildCard(String value) {
+        return '%' + value + '%';
     }
 
     private Flux<? extends Result> executeUpdate(UserInfo userInfo, Connection connection) {

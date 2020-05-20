@@ -1,0 +1,56 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link data-th-href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link data-th-href="@{/css/main.css}" rel="stylesheet">
+    <script type="text/javascript" th:src="@{/js/jquery-3.5.0.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/fetch.interests.js}"></script>
+    <script type="text/javascript" th:src="@{/js/add-friend.js}"></script>
+    <script type="text/javascript" th:src="@{/js/search-users.js}"></script>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="row">
+        <div id="title">
+            <h1>Архитектор высоких нагрузок. Задание 1 "Социальная сеть".</h1>
+        </div>
+
+    <form class="form-search" method="get" action="/user/search-users">
+        <h2 class="form-search-heading">Search form</h2>
+        <p>
+            <label for="firstName">First name</label>
+            <label for="firstName" class="sr-only">First name</label>
+            <input type="text" id="firstName" name="firstName" class="form-control" placeholder="First Name">
+        </p>
+        <p>
+            <label for="surName">Sur name</label>
+            <label for="surName" class="sr-only">Sur name</label>
+            <input type="text" id="surName" name="surName" class="form-control" placeholder="Sur Name">
+        </p>
+
+        <!-- AJAX jQuery request
+        <button type="button" class="btn btn-sm btn-primary btn-success" onclick="searchUsers()">Search</button>
+        -->
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Search</button>
+    </form>
+
+    <form sec:authorize="isAuthenticated()" class="form-application" method="get" action="/user/application">
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Home page</button>
+    </form>
+
+    <form sec:authorize="isAuthenticated()" class="form-application" method="get" action="/user/friends">
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Friends</button>
+    </form>
+
+    <form sec:authorize="isAuthenticated()" class="form-application" method="post" action="/logout">
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Logout</button>
+    </form>
+
+</div>
+</body>
