@@ -245,18 +245,14 @@ public class ReactiveService {
 
     public Flux<UserInfo> searchUsers(String firstName, String surName) {
         if (firstName.length() > 0 && surName.length() > 0) {
-            System.err.println("firstName = " + firstName);
-            System.err.println("surName = " + surName);
             return userInfoDao.searchAllByFirstNameAndSurName(firstName, surName)
                     .take(10)
                     .timeout(Duration.ofMillis(duration), Mono.empty());
         } else if (firstName.length() > 0) {
-            System.err.println("firstName = " + firstName);
             return userInfoDao.searchAllByFirstName(firstName)
                     .take(10)
                     .timeout(Duration.ofMillis(duration), Mono.empty());
         } else if (surName.length() > 0) {
-            System.err.println("surName = " + surName);
             return userInfoDao.searchAllBySurName(surName)
                     .take(10)
                     .timeout(Duration.ofMillis(duration), Mono.empty());
@@ -270,23 +266,16 @@ public class ReactiveService {
 
     private Flux<UserInfoSignFriend> searchUsersSignFriend(String username, String firstName, String surName) {
         if (firstName.length() > 0 && surName.length() > 0) {
-            System.err.println("firstName = " + firstName);
-            System.err.println("surName = " + surName);
-
             return readByLogin(username)
                     .timeout(Duration.ofMillis(duration), Mono.empty())
                     .flatMapMany(userProfile -> searchAllByFirstNameAndSurName(userProfile.getId(), firstName, surName))
                     .switchIfEmpty(Flux.empty());
         } else if (firstName.length() > 0) {
-            System.err.println("firstName = " + firstName);
-
             return readByLogin(username)
                     .timeout(Duration.ofMillis(duration), Mono.empty())
                     .flatMapMany(userProfile -> searchAllByFirstName(userProfile.getId(), firstName))
                     .switchIfEmpty(Flux.empty());
         } else if (surName.length() > 0) {
-            System.err.println("surName = " + surName);
-
             return readByLogin(username)
                     .timeout(Duration.ofMillis(duration), Mono.empty())
                     .flatMapMany(userProfile -> getTimeout(userProfile.getId(), surName))

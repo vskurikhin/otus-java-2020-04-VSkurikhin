@@ -6,8 +6,8 @@ application:
       host: ${DB_HOST:localhost}
       port: ${DB_PORT:3306}
       database: ${DB_NAME:db}
-  reactive.duration: 10000
-  reactive.limit: 10000
+  reactive.duration: 60000
+  reactive.limit: 1000
   locale: "en_US"
   rest:
     user: "/user/api"
@@ -16,25 +16,23 @@ application:
 
 logging:
   level:
-    org.springframework: DEBUG
-    su.svn: TRACE
+    org.springframework: INFO
+    su.svn: INFO
 
 server:
   port: ${PORT:5000}
-
 
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${JDBC_DATABASE_URL:jdbc:mysql://localhost/db?reconnect=true}?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     hikari:
-      connection-timeout: 30000
-      maximum-pool-size: 5
+      connection-timeout: 60000
+      maximum-pool-size: 200
   profiles.active: production
   r2dbc:
     pool:
       enabled: true
-      initial-size: 4
-      max-size: 5
+      initial-size: 200
+      max-size: 200
   thymeleaf.mode: HTML
-
