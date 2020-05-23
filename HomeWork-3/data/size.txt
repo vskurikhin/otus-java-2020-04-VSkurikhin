@@ -1,0 +1,7 @@
+mysql> SELECT table_name AS `Table`, round(((data_length + index_length) / 1024 / 1024), 2) `Size in MB` FROM information_schema.TABLES WHERE table_schema = 'db' AND table_name = "user_info";
++-----------+------------+
+| Table     | Size in MB |
++-----------+------------+
+| user_info |      67.61 |
++-----------+------------+
+1 row in set (0.12 sec)

@@ -217,7 +217,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
     }
 
     private String valueWithWildCard(String value) {
-        return '%' + value + '%';
+        return value + '%';
     }
 
     private Flux<? extends Result> executeUpdate(UserInfo userInfo, Connection connection) {

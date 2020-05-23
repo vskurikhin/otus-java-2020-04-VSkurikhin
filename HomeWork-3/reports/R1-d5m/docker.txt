@@ -1,2 +1,0 @@
-CONTAINER ID        NAME                CPU %               MEM USAGE / LIMIT   MEM %               NET I/O             BLOCK I/O           PIDS
-c3cd0cf79d3c        test-mysql          53.25%              442.7MiB / 1.5GiB   28.82%              2.07MB / 8.99MB     197kB / 16.4MB      52
