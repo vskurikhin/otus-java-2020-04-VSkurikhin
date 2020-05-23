@@ -246,15 +246,15 @@ public class ReactiveService {
     public Flux<UserInfo> searchUsers(String firstName, String surName) {
         if (firstName.length() > 0 && surName.length() > 0) {
             return userInfoDao.searchAllByFirstNameAndSurName(firstName, surName)
-                    .take(10)
+                    .take(limit)
                     .timeout(Duration.ofMillis(duration), Mono.empty());
         } else if (firstName.length() > 0) {
             return userInfoDao.searchAllByFirstName(firstName)
-                    .take(10)
+                    .take(limit)
                     .timeout(Duration.ofMillis(duration), Mono.empty());
         } else if (surName.length() > 0) {
             return userInfoDao.searchAllBySurName(surName)
-                    .take(10)
+                    .take(limit)
                     .timeout(Duration.ofMillis(duration), Mono.empty());
         }
         return Flux.empty();
