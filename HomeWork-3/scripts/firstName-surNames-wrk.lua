@@ -12,7 +12,7 @@ request = function()
   return wrk.format('GET', path, {['Host'] = 'localhost'})
 end
 
-logfile = io.open("/dev/shm/wrk-" .. os.date('%Y-%m-%d_%H_%M_%S') .. ".log", "a+");
+logfile = io.open("wrk-" .. os.date('%Y-%m-%d_%H_%M_%S') .. ".log", "a+");
 
 response = function(status, header, body)
      logfile:write("status:" .. status .. "\n" .. body .. "\n-------------------------------------------------\n");
