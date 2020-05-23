@@ -1,0 +1,14 @@
+Running 5m test @ http://localhost:5000
+  8 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    17.42s     7.60s   30.00s    63.63%
+    Req/Sec     1.30      2.60    20.00     89.80%
+  Latency Distribution
+     50%   17.99s 
+     75%   23.80s 
+     90%   27.00s 
+     99%   29.89s 
+  1280 requests in 5.00m, 1.62MB read
+  Socket errors: connect 0, read 0, write 0, timeout 260
+Requests/sec:      4.27
+Transfer/sec:      5.53KB

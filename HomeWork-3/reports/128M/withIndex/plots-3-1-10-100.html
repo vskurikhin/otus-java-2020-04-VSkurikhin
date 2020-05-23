@@ -1,0 +1,616 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<style type="text/css">
+    div.histo {
+        visibility: hidden
+    }
+</style>
+
+<!--Load the AJAX API-->
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+<script type="text/javascript">
+
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+        // Great success! All the File APIs are supported.
+    } else {
+        alert('The File APIs are not fully supported in this browser.');
+    }
+
+    // Load the Visualization API and the corechart package.
+    google.load('visualization', '1.0', {'packages':['corechart']});
+
+    // Set a callback to run when the Google Visualization API is loaded.
+    google.setOnLoadCallback(drawInitialChart);
+
+    var chartData = null;
+    var chart = null;
+
+    function setChartData(names, histos) {
+        while (names.length < histos.length) {
+            names.push('Unknown');
+        }
+
+        var series = [];
+        for (var i = 0; i < histos.length; i++) {
+            series = appendDataSeries(histos[i], names[i], series);
+        }
+
+        chartData = google.visualization.arrayToDataTable(series);
+    }
+
+
+    function drawInitialChart() {
+        // Connect the choose files button:
+        document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+        // Load some static example data:
+        var data1Str = document.querySelector("div#data_1").innerHTML.trim();
+        var data2Str = document.querySelector("div#data_2").innerHTML.trim();
+        var data3Str = document.querySelector("div#data_3").innerHTML.trim();
+        var histos = [data1Str, data2Str, data3Str];
+        var names = ['1 work rate (throughput), 5 min.', '10 work rate (throughput), 5 min.', '100 work rate (throughput), 5 min.'];
+
+        setChartData(names, histos);
+        drawChart();
+    }
+
+    var maxPercentile = 1000;
+
+    function drawChart() {
+
+        var ticks =
+                [{v:1,f:'0%'},
+                    {v:10,f:'90%'},
+                    {v:100,f:'99%'},
+                    {v:1000,f:'99.9%'},
+                    {v:10000,f:'99.99%'},
+                    {v:100000,f:'99.999%'},
+                    {v:1000000,f:'99.9999%'},
+                    {v:10000000,f:'99.99999%'},
+                    {v:100000000,f:'99.999999%'}];
+
+        var unitSelection = document.getElementById("timeUnitSelection");
+        var unitSelIndex = unitSelection.selectedIndex;
+        var unitText = unitSelection.options[unitSelIndex].innerHTML;
+
+        var options = {
+            title: 'Latency by Percentile Distribution',
+            height: 480,
+//            hAxis: {title: 'Percentile', minValue: 0, logScale: true, ticks:ticks },
+            hAxis: {
+                title: "Percentile",
+                minValue: 1, logScale: true, ticks:ticks,
+                viewWindowMode:'explicit',
+                viewWindow:{
+                    max:maxPercentile,
+                    min:1
+                }
+            },
+            vAxis: {title: 'Latency (' + unitText + ')', minValue: 0 },
+            legend: {position: 'bottom'}
+        };
+
+        if (chart == null) {
+            chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        }
+
+        // add tooltips with correct percentile text to data:
+        var columns = [0];
+        for (var i = 1; i < chartData.getNumberOfColumns(); i++) {
+            columns.push(i);
+            columns.push({
+                type: 'string',
+                properties: {
+                    role: 'tooltip'
+                },
+                calc: (function (j) {
+                    return function (dt, row) {
+                        var percentile = 100.0 - (100.0/dt.getValue(row, 0));
+                        return dt.getColumnLabel(j) + ': ' +
+                                percentile.toPrecision(7) +
+                                '\%\'ile = ' + dt.getValue(row, j) + ' ' + unitText
+                    }
+                })(i)
+            });
+        }
+        var view = new google.visualization.DataView(chartData);
+        view.setColumns(columns);
+
+        chart.draw(view, options);
+
+    }
+</script>
+<script type="text/javascript">
+    function appendDataSeries(histo, name, dataSeries) {
+        var series;
+        var seriesCount;
+        if (dataSeries.length == 0) {
+            series = [ ['X', name] ];
+            seriesCount = 1;
+        } else {
+            series = dataSeries;
+            series[0].push(name);
+            seriesCount = series[0].length - 1;
+        }
+
+        var lines = histo.split("\n");
+
+        var seriesIndex = 1;
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            var values = line.trim().split(/[ ]+/);
+
+            if (line[0] != '#' && values.length == 4) {
+
+                var y = parseFloat(values[0]);
+                var x = parseFloat(values[3]);
+
+                if (!isNaN(x) && !isNaN(y)) {
+
+                    if (seriesIndex >= series.length) {
+                        series.push([x]);
+                    }
+
+                    while (series[seriesIndex].length < seriesCount) {
+                        series[seriesIndex].push(null);
+                    }
+
+                    series[seriesIndex].push(y);
+                    seriesIndex++;
+                }
+            }
+        }
+
+        while (seriesIndex < series.length) {
+            series[seriesIndex].push(null);
+            seriesIndex++;
+        }
+
+        return series;
+    }
+</script>
+<script>
+    function timeUnitsSelected(evt) {
+        drawChart();
+        return {typed: ''};
+    }
+
+    function doExport(event) {
+        saveSvgAsPng(document.querySelector('svg'), 'Histogram', 2.0);
+        return {typed: ''};
+    }
+</script>
+
+<script>
+    function handleFileSelect(evt) {
+        var files = evt.target.files; // FileList object
+        var fileDisplayArea = document.getElementById('fileDisplayArea');
+
+        var names = [];
+        var histos = [];
+
+        fileDisplayArea.innerText = "file selected...\n";
+
+        // Loop through the FileList and render image files as thumbnails.
+        for (var i = 0, f; f = files[i]; i++) {
+            var reader = new FileReader();
+
+            reader.onload = (function(theFile) {
+                return function(e) {
+                    histos.push(e.target.result);
+                    names.push(escape(theFile.name));
+                    fileDisplayArea.innerText = " Plotting input from: " + names + "\n";
+                    setChartData(names, histos);
+                    drawChart();
+                };
+            })(f);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(f);
+        }
+
+    }
+
+</script>
+
+<script type="text/javascript">
+    (function() {
+        var out$ = typeof exports != 'undefined' && exports || this;
+
+        var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+
+        function inlineImages(callback) {
+            var images = document.querySelectorAll('svg image');
+            var left = images.length;
+            if (left == 0) {
+                callback();
+            }
+            for (var i = 0; i < images.length; i++) {
+                (function(image) {
+                    if (image.getAttribute('xlink:href')) {
+                        var href = image.getAttribute('xlink:href').value;
+                        if (/^http/.test(href) && !(new RegExp('^' + window.location.host).test(href))) {
+                            throw new Error("Cannot render embedded images linking to external hosts.");
+                        }
+                    }
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    var img = new Image();
+                    img.src = image.getAttribute('xlink:href');
+                    img.onload = function() {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        image.setAttribute('xlink:href', canvas.toDataURL('image/png'));
+                        left--;
+                        if (left == 0) {
+                            callback();
+                        }
+                    }
+                })(images[i]);
+            }
+        }
+
+        function styles(dom) {
+            var css = "";
+            var sheets = document.styleSheets;
+            for (var i = 0; i < sheets.length; i++) {
+                if (sheets[i].hasOwnProperty('cssRules')) {
+                    var rules = sheets[i].cssRules;
+                    for (var j = 0; j < rules.length; j++) {
+                        var rule = rules[j];
+                        if (typeof(rule.style) != "undefined") {
+                            css += rule.selectorText + " { " + rule.style.cssText + " }\n";
+                        }
+                    }
+                }
+            }
+
+            var s = document.createElement('style');
+            s.setAttribute('type', 'text/css');
+            s.innerHTML = "<![CDATA[\n" + css + "\n]]>";
+
+            var defs = document.createElement('defs');
+            defs.appendChild(s);
+            return defs;
+        }
+
+        out$.svgAsDataUri = function(el, scaleFactor, cb) {
+            scaleFactor = scaleFactor || 1;
+
+            inlineImages(function() {
+                var outer = document.createElement("div");
+                var clone = el.cloneNode(true);
+                var width = parseInt(
+                        clone.getAttribute('width')
+                        || clone.style.width
+                        || out$.getComputedStyle(el).getPropertyValue('width')
+                );
+                var height = parseInt(
+                        clone.getAttribute('height')
+                        || clone.style.height
+                        || out$.getComputedStyle(el).getPropertyValue('height')
+                );
+
+                var xmlns = "http://www.w3.org/2000/xmlns/";
+
+                clone.setAttribute("version", "1.1");
+                clone.setAttributeNS(xmlns, "xmlns", "http://www.w3.org/2000/svg");
+                clone.setAttributeNS(xmlns, "xmlns:xlink", "http://www.w3.org/1999/xlink");
+                clone.setAttribute("width", width * scaleFactor);
+                clone.setAttribute("height", height * scaleFactor);
+                clone.setAttribute("viewBox", "0 0 " + width + " " + height);
+                outer.appendChild(clone);
+
+                clone.insertBefore(styles(clone), clone.firstChild);
+
+                var svg = doctype + outer.innerHTML;
+                var uri = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svg)));
+                if (cb) {
+                    cb(uri);
+                }
+            });
+        }
+
+        out$.saveSvgAsPng = function(el, name, scaleFactor) {
+            out$.svgAsDataUri(el, scaleFactor, function(uri) {
+                var image = new Image();
+                image.src = uri;
+                image.onload = function() {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+                    var context = canvas.getContext('2d');
+                    context.drawImage(image, 0, 0);
+
+                    var a = document.createElement('a');
+                    a.download = name;
+                    a.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(a);
+                    a.click();
+                }
+            });
+        }
+    })();
+</script>
+
+<style>
+    .slider-width500
+    {
+        width: 500px;
+    }
+</style>
+
+</head>
+
+<body>
+
+<h1>HdrHistogram Plotter</h1>
+
+<h2>With index. 32 Mb innodb buffer pool size.</h2>
+
+<input hidden="hidden" type="file" id="files" name="files[]" multiple />
+
+<!--Div that will hold the chart-->
+<div id="chart_div">None Loaded</div>
+
+Latency time units:
+<select name="units" size="0" id="timeUnitSelection" onChange="timeUnitsSelected()">
+    <option selected value="Latency (milliseconds)">milliseconds</option>
+</select>
+<button type='button' onclick='doExport(event)'>Export Image</button>
+
+&nbsp; &nbsp; &nbsp; &nbsp;
+<p>
+Percentile range:
+
+<input type="range" class="slider-width500"
+       min="1" max="8" value="3" step="1"
+       width="300px"
+       onchange="showValue(this.value)" />
+<span id="percentileRange">99.9%</span>
+<script type="text/javascript">
+    function showValue(newValue) {
+        var x = Math.pow(10, newValue);
+        var percentile = 100.0 - (100.0 / x);
+        document.getElementById("percentileRange").innerHTML=percentile + "%";
+        maxPercentile = x;
+        drawChart();
+        return {typed: ''};
+    }
+</script>
+</p>
+<!--<h4>Expected Service Level:</h4>-->
+<!--<input type="checkbox" name="ESL" value="ESL">Plot Expected Service Level<br>-->
+<!--Percentile:-->
+<!--<input type="text" id="ESLPercentile0" name="ESLPercentile0" size="6" value = 90 />-->
+<!--% &nbsp &nbsp &nbsp Limit:-->
+<!--<input type="text" id="ESLLimit0" name="ESLLimit0" size="12"/>-->
+<!--<br>-->
+<!--Percentile:-->
+<!--<input type="text" id="ESLPercentile1" name="ESLPercentile1" size="6" value = 99 />-->
+<!--% &nbsp &nbsp &nbsp Limit:-->
+<!--<input type="text" id="ESLLimit1" name="ESLLimit1" size="12"/>-->
+<!--<br>-->
+<!--Percentile:-->
+<!--<input type="text" id="ESLPercentile2" name="ESLPercentile2" size="6" value = 99.99 />-->
+<!--% &nbsp &nbsp &nbsp Limit:-->
+<!--<input type="text" id="ESLLimit2" name="ESLLimit2" size="12"/>-->
+<!--<br>-->
+<!--Percentile:-->
+<!--<input type="text" id="ESLPercentile3" name="ESLPercentile2" size="6" value="100.0" readonly/>-->
+<!--% &nbsp &nbsp &nbsp Limit:-->
+<!--<input type="text" id="ESLLimit3" name="ESLLimit2" size="12"/>-->
+
+<div id="data_1" class="histo">
+  Detailed Percentile spectrum:
+       Value   Percentile   TotalCount 1/(1-Percentile)
+
+       8.839     0.000000            1         1.00
+      18.511     0.100000           29         1.11
+      26.879     0.200000           58         1.25
+      30.911     0.300000           87         1.43
+      33.567     0.400000          116         1.67
+      36.383     0.500000          145         2.00
+      39.487     0.550000          160         2.22
+      42.879     0.600000          174         2.50
+      45.695     0.650000          189         2.86
+      48.927     0.700000          203         3.33
+      52.735     0.750000          218         4.00
+      54.175     0.775000          225         4.44
+      57.215     0.800000          232         5.00
+      62.879     0.825000          240         5.71
+      68.031     0.850000          247         6.67
+      71.359     0.875000          254         8.00
+      75.007     0.887500          258         8.89
+      77.567     0.900000          261        10.00
+      88.831     0.912500          265        11.43
+      96.063     0.925000          269        13.33
+     100.415     0.937500          272        16.00
+     103.167     0.943750          274        17.78
+     103.871     0.950000          276        20.00
+     105.535     0.956250          278        22.86
+     120.191     0.962500          280        26.67
+     126.399     0.968750          281        32.00
+     129.855     0.971875          282        35.56
+     148.991     0.975000          283        40.00
+     153.855     0.978125          284        45.71
+     161.151     0.981250          285        53.33
+     166.783     0.984375          286        64.00
+     166.783     0.985938          286        71.11
+     346.623     0.987500          287        80.00
+     346.623     0.989062          287        91.43
+     375.551     0.990625          288       106.67
+     375.551     0.992188          288       128.00
+     375.551     0.992969          288       142.22
+     430.591     0.993750          289       160.00
+     430.591     0.994531          289       182.86
+     430.591     0.995313          289       213.33
+     430.591     0.996094          289       256.00
+     430.591     0.996484          289       284.44
+     529.919     0.996875          290       320.00
+     529.919     1.000000          290          inf
+#[Mean    =       49.338, StdDeviation   =       51.579]
+#[Max     =      529.408, Total count    =          290]
+#[Buckets =           27, SubBuckets     =         2048]
+</div>
+
+<div id="data_2" class="histo">
+  Detailed Percentile spectrum:
+       Value   Percentile   TotalCount 1/(1-Percentile)
+
+       5.307     0.000000            1         1.00
+      12.095     0.100000          290         1.11
+      14.167     0.200000          581         1.25
+      16.623     0.300000          870         1.43
+      19.679     0.400000         1160         1.67
+      23.295     0.500000         1450         2.00
+      25.215     0.550000         1596         2.22
+      27.935     0.600000         1740         2.50
+      30.959     0.650000         1885         2.86
+      33.535     0.700000         2032         3.33
+      35.327     0.750000         2176         4.00
+      36.511     0.775000         2248         4.44
+      37.919     0.800000         2320         5.00
+      39.359     0.825000         2394         5.71
+      42.207     0.850000         2465         6.67
+      45.631     0.875000         2538         8.00
+      47.647     0.887500         2575         8.89
+      51.423     0.900000         2610        10.00
+      58.335     0.912500         2647        11.43
+      68.671     0.925000         2683        13.33
+      82.879     0.937500         2720        16.00
+      93.631     0.943750         2737        17.78
+     101.503     0.950000         2755        20.00
+     115.839     0.956250         2774        22.86
+     155.775     0.962500         2792        26.67
+     178.047     0.968750         2810        32.00
+     196.351     0.971875         2819        35.56
+     222.207     0.975000         2828        40.00
+     234.239     0.978125         2837        45.71
+     257.535     0.981250         2846        53.33
+     339.967     0.984375         2855        64.00
+     378.879     0.985938         2861        71.11
+     387.327     0.987500         2864        80.00
+     396.799     0.989062         2869        91.43
+     414.975     0.990625         2873       106.67
+     446.975     0.992188         2878       128.00
+     481.023     0.992969         2880       142.22
+     490.239     0.993750         2883       160.00
+     512.255     0.994531         2885       182.86
+     570.879     0.995313         2887       213.33
+     620.031     0.996094         2889       256.00
+     620.543     0.996484         2890       284.44
+     636.415     0.996875         2892       320.00
+     637.951     0.997266         2893       365.71
+     695.807     0.997656         2894       426.67
+     696.319     0.998047         2895       512.00
+     696.319     0.998242         2895       568.89
+     696.831     0.998437         2896       640.00
+     697.343     0.998633         2897       731.43
+     697.343     0.998828         2897       853.33
+     697.855     0.999023         2899      1024.00
+     697.855     0.999121         2899      1137.78
+     697.855     0.999219         2899      1280.00
+     697.855     0.999316         2899      1462.86
+     697.855     0.999414         2899      1706.67
+     697.855     0.999512         2899      2048.00
+     697.855     0.999561         2899      2275.56
+     697.855     0.999609         2899      2560.00
+     811.519     0.999658         2900      2925.71
+     811.519     1.000000         2900          inf
+#[Mean    =       38.914, StdDeviation   =       68.710]
+#[Max     =      811.008, Total count    =         2900]
+#[Buckets =           27, SubBuckets     =         2048]
+</div>
+
+<div id="data_3" class="histo">
+  Detailed Percentile spectrum:
+       Value   Percentile   TotalCount 1/(1-Percentile)
+
+       4.347     0.000000            1         1.00
+      31.407     0.100000         2901         1.11
+      75.263     0.200000         5804         1.25
+     114.751     0.300000         8706         1.43
+     134.015     0.400000        11609         1.67
+     145.791     0.500000        14530         2.00
+     151.039     0.550000        15980         2.22
+     156.159     0.600000        17409         2.50
+     162.559     0.650000        18877         2.86
+     169.855     0.700000        20308         3.33
+     180.863     0.750000        21757         4.00
+     189.183     0.775000        22479         4.44
+     199.167     0.800000        23218         5.00
+     212.607     0.825000        23928         5.71
+     234.239     0.850000        24656         6.67
+     265.471     0.875000        25384         8.00
+     284.671     0.887500        25745         8.89
+     303.359     0.900000        26107        10.00
+     324.351     0.912500        26466        11.43
+     359.935     0.925000        26828        13.33
+     418.303     0.937500        27191        16.00
+     450.559     0.943750        27372        17.78
+     503.295     0.950000        27554        20.00
+     571.903     0.956250        27735        22.86
+     634.367     0.962500        27916        26.67
+     730.111     0.968750        28098        32.00
+     771.071     0.971875        28188        35.56
+     820.735     0.975000        28280        40.00
+     906.751     0.978125        28369        45.71
+    1038.847     0.981250        28461        53.33
+    1226.751     0.984375        28552        64.00
+    1385.471     0.985938        28596        71.11
+    1519.615     0.987500        28641        80.00
+    1657.855     0.989062        28686        91.43
+    1836.031     0.990625        28732       106.67
+    2072.575     0.992188        28777       128.00
+    2203.647     0.992969        28800       142.22
+    2322.431     0.993750        28823       160.00
+    2496.511     0.994531        28845       182.86
+    2701.311     0.995313        28869       213.33
+    2883.583     0.996094        28890       256.00
+    3131.391     0.996484        28902       284.44
+    3217.407     0.996875        28913       320.00
+    3454.975     0.997266        28924       365.71
+    3624.959     0.997656        28936       426.67
+    3852.287     0.998047        28947       512.00
+    3932.159     0.998242        28953       568.89
+    4020.223     0.998437        28958       640.00
+    4167.679     0.998633        28964       731.43
+    4300.799     0.998828        28970       853.33
+    4444.159     0.999023        28975      1024.00
+    4661.247     0.999121        28978      1137.78
+    4767.743     0.999219        28981      1280.00
+    4874.239     0.999316        28984      1462.86
+    4907.007     0.999414        28987      1706.67
+    5095.423     0.999512        28989      2048.00
+    5136.383     0.999561        28991      2275.56
+    5210.111     0.999609        28993      2560.00
+    5214.207     0.999658        28995      2925.71
+    5214.207     0.999707        28995      3413.33
+    5255.167     0.999756        28996      4096.00
+    5279.743     0.999780        28997      4551.11
+    5410.815     0.999805        28998      5120.00
+    5435.391     0.999829        29000      5851.43
+    5435.391     0.999854        29000      6826.67
+    5435.391     0.999878        29000      8192.00
+    5435.391     0.999890        29000      9102.22
+    5439.487     0.999902        29001     10240.00
+    5439.487     0.999915        29001     11702.86
+    5439.487     0.999927        29001     13653.33
+    5566.463     0.999939        29002     16384.00
+    5566.463     0.999945        29002     18204.44
+    5566.463     0.999951        29002     20480.00
+    5566.463     0.999957        29002     23405.71
+    5566.463     0.999963        29002     27306.67
+    6307.839     0.999969        29003     32768.00
+    6307.839     1.000000        29003          inf
+#[Mean    =      198.343, StdDeviation   =      338.805]
+#[Max     =     6303.744, Total count    =        29003]
+#[Buckets =           27, SubBuckets     =         2048]
+</div>
+
+</body>
+</html>

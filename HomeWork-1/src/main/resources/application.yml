@@ -28,11 +28,11 @@ spring:
     url: ${JDBC_DATABASE_URL:jdbc:mysql://localhost/db?reconnect=true}?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     hikari:
       connection-timeout: 60000
-      maximum-pool-size: 200
+      maximum-pool-size: 1010
   profiles.active: production
   r2dbc:
     pool:
       enabled: true
-      initial-size: 200
-      max-size: 200
+      initial-size: 110
+      max-size: 1010
   thymeleaf.mode: HTML
