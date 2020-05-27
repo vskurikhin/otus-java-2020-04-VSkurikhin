@@ -35,8 +35,14 @@ public class R2dbcConfiguration {
     @Value("${application.db.r2dbc.port}")
     private int dbPort;
 
+    @Value("${application.db.r2dbc.port-ro}")
+    private int dbPortRo;
+
     @Value("${application.db.r2dbc.database}")
     private String dbName;
+
+    @Value("${application.db.r2dbc.pool.duration}")
+    private int poolDuration;
 
     @Value("${spring.r2dbc.pool.acquire-retry:3}")
     private int acquireRetry;
@@ -67,7 +73,27 @@ public class R2dbcConfiguration {
                 .option(INITIAL_SIZE, initialSize)
                 .option(MAX_SIZE, maxSize)
                 .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
-                .option(Option.valueOf("maxLifeTime"), Duration.ofMillis(1000))
+                .option(Option.valueOf("maxLifeTime"), poolDuration)
+                .option(Option.valueOf("maxIdleTime"), Duration.ofMillis(100))
+                .build();
+        return ConnectionFactories.get(options);
+    }
+
+    @Bean(name = "connectionFactoryRo")
+    public ConnectionFactory connectionFactoryRo() {
+        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
+                .option(DRIVER, "pool")
+                .option(PROTOCOL, "mysql")
+                .option(HOST, dbHost)
+                .option(PORT, dbPortRo)
+                .option(USER, dbUser)
+                .option(PASSWORD, dbPassword)
+                .option(DATABASE, dbName)
+                .option(ACQUIRE_RETRY, acquireRetry)
+                .option(INITIAL_SIZE, initialSize)
+                .option(MAX_SIZE, maxSize)
+                .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
+                .option(Option.valueOf("maxLifeTime"), poolDuration)
                 .option(Option.valueOf("maxIdleTime"), Duration.ofMillis(100))
                 .build();
         return ConnectionFactories.get(options);
