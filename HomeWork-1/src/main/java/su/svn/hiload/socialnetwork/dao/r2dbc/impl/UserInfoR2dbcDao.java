@@ -5,6 +5,7 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,46 +21,44 @@ import static su.svn.hiload.socialnetwork.utils.ErrorCode.UPDATE_SWITCH_IF_EMPTY
 @Repository("userInfoR2dbcDao")
 public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
-    private final ConnectionFactory connectionFactory;
-
     private static final Logger LOG = LoggerFactory.getLogger(UserInfoR2dbcDao.class);
 
-    private final static String CREATE = "INSERT " +
+    private static final String CREATE = "INSERT " +
             " INTO user_info (id, first_name, sur_name, age, sex, city) " +
             " VALUES (?, ?, ?, ?, ?, ?) ";
 
-    private final static String READ_BY_ID = "SELECT " +
+    private static final String READ_BY_ID = "SELECT " +
             " id, first_name, sur_name, age, sex, city " +
             " from user_info " +
             " where id = ? ";
 
-    private final static String READ_ALL_USERS_BY_ID = "SELECT " +
+    private static final String READ_ALL_USERS_BY_ID = "SELECT " +
             " id, first_name, sur_name, age, sex, city " +
             " FROM user_info " +
             " WHERE id <> ? ";
 
-    private final static String READ_ALL_FRIENDS = "SELECT " +
+    private static final String READ_ALL_FRIENDS = "SELECT " +
             " u.id AS id, u.first_name AS first_name, u.sur_name AS sur_name, u.age AS age, u.sex AS sex, u.city AS city " +
             " FROM user_info u " +
             " INNER JOIN user_friends f ON u.id = f.friend_info_id " +
             " WHERE f.user_info_id = ? ";
 
-    private final static String SEARCH_ALL_BY_FIRST_NAME = "SELECT " +
+    private static final String SEARCH_ALL_BY_FIRST_NAME = "SELECT " +
             " id, first_name, sur_name, age, sex, city " +
             " FROM user_info " +
             " WHERE first_name LIKE ? ";
 
-    private final static String SEARCH_ALL_BY_SUR_NAME = "SELECT " +
+    private static final String SEARCH_ALL_BY_SUR_NAME = "SELECT " +
             " id, first_name, sur_name, age, sex, city " +
             " FROM user_info " +
             " WHERE sur_name LIKE ? ";
 
-    private final static String SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME = "SELECT " +
+    private static final String SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME = "SELECT " +
             " id, first_name, sur_name, age, sex, city " +
             " FROM user_info " +
             " WHERE first_name LIKE ? AND sur_name LIKE ?";
 
-    private final static String UPDATE = "UPDATE " +
+    private static final String UPDATE = "UPDATE " +
             " user_info SET " +
             " first_name = ?, " +
             " sur_name = ?, " +
@@ -68,12 +67,19 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
             " city = ? " +
             " WHERE id = ? ";
 
-    private final static String INSERT_FRIEND = "INSERT " +
+    private static final String INSERT_FRIEND = "INSERT " +
             " INTO user_friends (user_info_id, friend_info_id) " +
             " VALUES (?, ?) ";
 
-    public UserInfoR2dbcDao(ConnectionFactory connectionFactory) {
+    private final ConnectionFactory connectionFactory;
+
+    private final ConnectionFactory connectionFactoryRo;
+
+    public UserInfoR2dbcDao(
+            ConnectionFactory connectionFactory,
+            @Qualifier("connectionFactoryRo") ConnectionFactory connectionFactoryRo) {
         this.connectionFactory = connectionFactory;
+        this.connectionFactoryRo = connectionFactoryRo;
     }
 
     @Override
@@ -100,7 +106,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Mono<UserInfo> readFirstById(long id) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeReadById(id, connection));
         return liftMapResultToUserInfo(resultsFlux)
                 .next()
@@ -116,7 +122,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Flux<UserInfo> readAllUsers(long id) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeReadAllUsersById(id, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }
@@ -130,7 +136,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Flux<UserInfo> readAllFriends(long id) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeReadAllFriends(id, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }
@@ -144,7 +150,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Mono<UserInfo> addFriend(long id, long friendId) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeInsertFriend(id, friendId, connection));
         return resultsFlux
                 .flatMap(result -> result.map((row, rowMetadata) -> row.get(0, Integer.class)))
@@ -172,7 +178,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Flux<UserInfo> searchAllByFirstName(String firstName) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeSearchAllByFirstName(firstName, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }
@@ -186,7 +192,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Flux<UserInfo> searchAllBySurName(String surName) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeSearchAllBySurName(surName, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }
@@ -200,7 +206,7 @@ public class UserInfoR2dbcDao implements UserInfoCustomDao {
 
     @Override
     public Flux<UserInfo> searchAllByFirstNameAndSurName(String firstName, String surName) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeSearchAllByFirstNameAndSurName(firstName, surName, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }

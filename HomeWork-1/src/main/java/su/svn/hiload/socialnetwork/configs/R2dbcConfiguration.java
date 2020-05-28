@@ -7,6 +7,7 @@ import io.r2dbc.spi.Option;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.core.DefaultReactiveDataAccessStrategy;
 import org.springframework.data.r2dbc.core.ReactiveDataAccessStrategy;
@@ -31,6 +32,9 @@ public class R2dbcConfiguration {
 
     @Value("${application.db.r2dbc.host}")
     private String dbHost;
+
+    @Value("${application.db.r2dbc.host-ro}")
+    private String dbHostRo;
 
     @Value("${application.db.r2dbc.port}")
     private int dbPort;
@@ -60,6 +64,7 @@ public class R2dbcConfiguration {
     private String dbPassword;
 
     @Bean
+    @Primary
     public ConnectionFactory connectionFactory() {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "pool")
@@ -84,7 +89,7 @@ public class R2dbcConfiguration {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "pool")
                 .option(PROTOCOL, "mysql")
-                .option(HOST, dbHost)
+                .option(HOST, dbHostRo)
                 .option(PORT, dbPortRo)
                 .option(USER, dbUser)
                 .option(PASSWORD, dbPassword)

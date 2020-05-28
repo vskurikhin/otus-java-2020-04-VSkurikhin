@@ -23,7 +23,9 @@ import su.svn.hiload.socialnetwork.view.*;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static su.svn.hiload.socialnetwork.utils.ErrorCode.*;
@@ -300,5 +302,14 @@ public class ReactiveService {
         return userInfoSignFriendDao.searchAllByFirstNameAndSurName(id, firstName, surName)
                 .take(limit)
                 .timeout(Duration.ofMillis(duration), Mono.empty());
+    }
+
+    public Flux<UserInfoDto> fetchInterestFor(List<UserInfo> batch) {
+        /* final Map<Long, UserInfo> map = batch.stream()
+                .collect(Collectors.toMap(UserInfo::getId, Function.identity()));
+        Iterable<Long> ids = map.keySet();
+        Flux<UserInterest> interests = userInterestDao.searchAllUserInfoId(ids); */
+
+        return null; // TODO
     }
 }

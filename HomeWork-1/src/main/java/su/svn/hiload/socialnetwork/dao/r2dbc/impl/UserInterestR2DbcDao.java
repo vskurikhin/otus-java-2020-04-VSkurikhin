@@ -3,6 +3,7 @@ package su.svn.hiload.socialnetwork.dao.r2dbc.impl;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.Result;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,20 +16,25 @@ import java.util.Objects;
 @Repository("userInterestR2dbcDao")
 public class UserInterestR2DbcDao implements UserInterestCustomDao {
 
-    private final ConnectionFactory connectionFactory;
+    private static final String READ_BY_ID = "SELECT id, user_info_id, interest FROM user_interest WHERE id = ?";
 
-    private final static String READ_BY_ID = "SELECT id, user_info_id, interest FROM user_interest WHERE id = ?";
-
-    private final static String READ_BY_USER_INFO_ID = "SELECT id, user_info_id, interest FROM user_interest" +
+    private static final String READ_BY_USER_INFO_ID = "SELECT id, user_info_id, interest FROM user_interest" +
             " WHERE user_info_id = ?";
 
-    public UserInterestR2DbcDao(ConnectionFactory connectionFactory) {
+    private final ConnectionFactory connectionFactory;
+
+    private final ConnectionFactory connectionFactoryRo;
+
+    public UserInterestR2DbcDao(
+            ConnectionFactory connectionFactory,
+            @Qualifier("connectionFactoryRo") ConnectionFactory connectionFactoryRo) {
         this.connectionFactory = connectionFactory;
+        this.connectionFactoryRo = connectionFactoryRo;
     }
 
     @Override
     public Mono<UserInterest> readById(long id) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeReadById(id, connection));
         return liftMapResultToUserInterest(resultsFlux)
                 .next()
@@ -44,7 +50,7 @@ public class UserInterestR2DbcDao implements UserInterestCustomDao {
 
     @Override
     public Flux<UserInterest> readAllByUserInfoId(long userInfoId) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeReadByUserInfo(userInfoId, connection));
         return liftMapResultToUserInterest(resultsFlux);
     }
