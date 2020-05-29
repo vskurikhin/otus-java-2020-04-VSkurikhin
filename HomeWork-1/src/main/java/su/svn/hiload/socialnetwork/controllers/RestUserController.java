@@ -38,13 +38,7 @@ public class RestUserController {
     private Flux<UserInfoDto> searchUserWithInterests(
             @RequestParam(value = "firstName", defaultValue = "") String firstName,
             @RequestParam(value = "surName", defaultValue = "") String surName) {
-        return reactiveService.searchUsers(firstName, surName)
-                .buffer(100)
-                .flatMap(this::fetchInterestFor);
-    }
-
-    private Flux<? extends UserInfoDto> fetchInterestFor(List<UserInfo> batch) {
-        return reactiveService.fetchInterestFor(batch);
+        return reactiveService.searchUsersWithInterests(firstName, surName);
     }
 
     @GetMapping("${application.rest.user}/interests/{id}")

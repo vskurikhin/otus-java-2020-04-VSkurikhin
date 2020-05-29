@@ -1,9 +1,6 @@
 package su.svn.hiload.socialnetwork.configs;
 
-import io.r2dbc.spi.ConnectionFactories;
-import io.r2dbc.spi.ConnectionFactory;
-import io.r2dbc.spi.ConnectionFactoryOptions;
-import io.r2dbc.spi.Option;
+import io.r2dbc.spi.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,8 +42,17 @@ public class R2dbcConfiguration {
     @Value("${application.db.r2dbc.database}")
     private String dbName;
 
+    @Value("${application.db.r2dbc.pool.connect-timeout:500}")
+    private int connectTimeout;
+
     @Value("${application.db.r2dbc.pool.duration}")
     private int poolDuration;
+
+    @Value("${application.db.r2dbc.pool.validation-depth}")
+    private ValidationDepth validationDepth;
+
+    @Value("${application.db.r2dbc.pool.validation-query}")
+    private String validationQuery;
 
     @Value("${spring.r2dbc.pool.acquire-retry:3}")
     private int acquireRetry;
@@ -75,11 +81,15 @@ public class R2dbcConfiguration {
                 .option(PASSWORD, dbPassword)
                 .option(DATABASE, dbName)
                 .option(ACQUIRE_RETRY, acquireRetry)
+                .option(CONNECT_TIMEOUT, Duration.ofMillis(connectTimeout))
                 .option(INITIAL_SIZE, initialSize)
                 .option(MAX_SIZE, maxSize)
-                .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
+                .option(VALIDATION_DEPTH, validationDepth)
+                .option(VALIDATION_QUERY, validationQuery)
                 .option(Option.valueOf("maxLifeTime"), poolDuration)
                 .option(Option.valueOf("maxIdleTime"), Duration.ofMillis(100))
+                .option(Option.valueOf("registerJmx"), true)
+                .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
                 .build();
         return ConnectionFactories.get(options);
     }
@@ -95,11 +105,15 @@ public class R2dbcConfiguration {
                 .option(PASSWORD, dbPassword)
                 .option(DATABASE, dbName)
                 .option(ACQUIRE_RETRY, acquireRetry)
+                .option(CONNECT_TIMEOUT, Duration.ofMillis(connectTimeout))
                 .option(INITIAL_SIZE, initialSize)
                 .option(MAX_SIZE, maxSize)
-                .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
+                .option(VALIDATION_DEPTH, validationDepth)
+                .option(VALIDATION_QUERY, validationQuery)
                 .option(Option.valueOf("maxLifeTime"), poolDuration)
                 .option(Option.valueOf("maxIdleTime"), Duration.ofMillis(100))
+                .option(Option.valueOf("registerJmx"), true)
+                .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
                 .build();
         return ConnectionFactories.get(options);
     }

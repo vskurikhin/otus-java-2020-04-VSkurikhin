@@ -9,4 +9,6 @@ public interface UserInterestCustomDao {
     Mono<UserInterest> readById(long id);
 
     Flux<UserInterest> readAllByUserInfoId(long userInfoId);
+
+    Flux<UserInterest> searchAllUserInfoId(Iterable<Long> ids);
 }

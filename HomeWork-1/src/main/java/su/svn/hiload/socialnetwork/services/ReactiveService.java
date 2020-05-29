@@ -22,8 +22,7 @@ import su.svn.hiload.socialnetwork.utils.ListCollectorToSizeInteger;
 import su.svn.hiload.socialnetwork.view.*;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,6 +33,8 @@ import static su.svn.hiload.socialnetwork.utils.ErrorCode.*;
 public class ReactiveService {
 
     private BCryptPasswordEncoder encoder;
+
+    private final int bufferSize;
 
     private final int duration;
 
@@ -50,6 +51,7 @@ public class ReactiveService {
 
     public ReactiveService(
             @Value("${application.security.strength}") int strength,
+            @Value("${application.reactive.buffer-size}") int bufferSize,
             @Value("${application.reactive.duration}") int duration,
             @Value("${application.reactive.limit}") int limit,
             UserInfoDao userInfoDao,
@@ -57,6 +59,7 @@ public class ReactiveService {
             UserProfileDao userProfileDao,
             UserInterestDao userInterestDao) {
         this.encoder = new BCryptPasswordEncoder(strength);
+        this.bufferSize = bufferSize;
         this.duration = duration;
         this.limit = limit;
         this.userInfoDao = userInfoDao;
@@ -304,12 +307,46 @@ public class ReactiveService {
                 .timeout(Duration.ofMillis(duration), Mono.empty());
     }
 
-    public Flux<UserInfoDto> fetchInterestFor(List<UserInfo> batch) {
-        /* final Map<Long, UserInfo> map = batch.stream()
-                .collect(Collectors.toMap(UserInfo::getId, Function.identity()));
-        Iterable<Long> ids = map.keySet();
-        Flux<UserInterest> interests = userInterestDao.searchAllUserInfoId(ids); */
+    public Flux<UserInfoDto> searchUsersWithInterests(String firstName, String surName) {
+        return searchUsers(firstName, surName)
+                .take(limit)
+                .buffer(bufferSize)
+                .flatMap(this::fetchInterestFor);
+    }
 
-        return null; // TODO
+    private Flux<UserInfoDto> fetchInterestFor(List<UserInfo> batch) {
+        final Map<Long, UserInfo> userInfoMap = batch.stream()
+                .collect(Collectors.toMap(UserInfo::getId, Function.identity()));
+        Iterable<Long> ids = new ArrayList<>(userInfoMap.keySet());
+        Mono<Map<Long, Collection<UserInterest>>> interests = userInterestDao.searchAllUserInfoId(ids)
+                .collectMultimap(UserInterest::getUserInfoId, Function.identity());
+
+        return interests.flatMapMany(map -> convertUserInfoValues(userInfoMap.values(), map));
+    }
+
+    private Flux<UserInfoDto> convertUserInfoValues(Collection<UserInfo> values, Map<Long, Collection<UserInterest>> map) {
+        List<UserInfoDto> userInfoDtos = values.stream()
+                .filter(Objects::nonNull)
+                .map(userInfo -> createUserInfoDto(userInfo, map.get(userInfo.getId())))
+                .collect(Collectors.toList());
+        return Flux.fromIterable(userInfoDtos);
+    }
+
+    private UserInfoDto createUserInfoDto(UserInfo userInfo, Collection<UserInterest> userInterest) {
+        UserInfoDto userInfoDto = new UserInfoDto();
+        userInfoDto.setId(userInfo.getId());
+        userInfoDto.setFirstName(userInfo.getFirstName());
+        userInfoDto.setSurName(userInfo.getSurName());
+        userInfoDto.setAge(userInfo.getAge());
+        userInfoDto.setSex(userInfo.getSex());
+        userInfoDto.setCity(userInfo.getCity());
+        if (userInterest != null) {
+            List<Interest> interests = userInterest.stream()
+                    .map(this::convertUserInterest)
+                    .collect(Collectors.toList());
+            userInfoDto.setInterests(interests);
+        }
+
+        return userInfoDto;
     }
 }

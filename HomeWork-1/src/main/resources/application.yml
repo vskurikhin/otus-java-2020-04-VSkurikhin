@@ -6,11 +6,17 @@ application:
       host: ${MASTER_DB_HOST:localhost}
       host-ro: ${CLUSTER_DB_HOST:localhost}
       port: ${MASTER_DB_PORT:3306}
-      port-ro: ${MASTER_DB_PORT:3305}
+      port-ro: ${CLUSTER_DB_PORT:3305}
       database: ${DB_NAME:db}
-      pool.duration: 30000
-  reactive.duration: 30000
-  reactive.limit: 100
+      pool:
+        connect-timeout: 500
+        duration: 30000
+        validation-depth: REMOTE
+        validation-query: "SELECT 1"
+  reactive:
+    buffer-size: 128
+    duration: 30000
+    limit: 10
   locale: "en_US"
   rest:
     user: "/user/api"
@@ -29,9 +35,11 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${JDBC_DATABASE_URL:jdbc:mysql://localhost/db?reconnect=true}?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    username: ${DB_USER:dbuser}
+    password: ${DB_PASS:password}
     hikari:
       connection-timeout: 1000
-      maximum-pool-size: 300
+      maximum-pool-size: 200
   profiles.active: production
   r2dbc:
     pool:
