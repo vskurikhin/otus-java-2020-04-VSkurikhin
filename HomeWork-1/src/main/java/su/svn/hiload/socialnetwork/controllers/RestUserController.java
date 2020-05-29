@@ -10,6 +10,9 @@ import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInterest;
 import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.view.FriendId;
+import su.svn.hiload.socialnetwork.view.UserInfoDto;
+
+import java.util.List;
 
 @RestController
 public class RestUserController {
@@ -29,6 +32,19 @@ public class RestUserController {
             @RequestParam(value = "firstName", defaultValue = "") String firstName,
             @RequestParam(value = "surName", defaultValue = "") String surName) {
         return reactiveService.searchUsers(firstName, surName);
+    }
+
+    @GetMapping("/public/search-users-with-interests")
+    private Flux<UserInfoDto> searchUserWithInterests(
+            @RequestParam(value = "firstName", defaultValue = "") String firstName,
+            @RequestParam(value = "surName", defaultValue = "") String surName) {
+        return reactiveService.searchUsers(firstName, surName)
+                .buffer(100)
+                .flatMap(this::fetchInterestFor);
+    }
+
+    private Flux<? extends UserInfoDto> fetchInterestFor(List<UserInfo> batch) {
+        return reactiveService.fetchInterestFor(batch);
     }
 
     @GetMapping("${application.rest.user}/interests/{id}")

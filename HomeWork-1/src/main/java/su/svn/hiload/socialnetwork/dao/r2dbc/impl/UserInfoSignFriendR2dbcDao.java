@@ -5,11 +5,11 @@ import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.UserInfoSignFriendDao;
-import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInfoSignFriend;
 import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
@@ -18,46 +18,51 @@ import java.util.Objects;
 @Service("userInfoSignFriendR2dbcDao")
 public class UserInfoSignFriendR2dbcDao implements UserInfoSignFriendDao {
 
-    private final ConnectionFactory connectionFactory;
-
     private static final Logger LOG = LoggerFactory.getLogger(UserInfoSignFriendR2dbcDao.class);
 
-    private final static String READ_BY_ID = "SELECT " +
+    private static final String READ_BY_ID = "SELECT " +
             " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, " +
             " (SELECT f.id FROM user_friends f WHERE f.user_info_id = ? AND f.friend_info_id = ?) AS friend " +
             " FROM user_info u " +
             " WHERE id = ? ";
 
-    private final static String READ_ALL_USERS = "SELECT " +
+    private static final String READ_ALL_USERS = "SELECT " +
             " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, f.id AS friend " +
             " FROM user_info u " +
             " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
             " WHERE u.id <> ? ";
 
-    private final static String SEARCH_ALL_BY_FIRST_NAME = "SELECT " +
+    private static final String SEARCH_ALL_BY_FIRST_NAME = "SELECT " +
             " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, f.id AS friend " +
             " FROM user_info u " +
             " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
             " WHERE u.first_name LIKE ? ";
 
-    private final static String SEARCH_ALL_BY_SUR_NAME = "SELECT " +
+    private static final String SEARCH_ALL_BY_SUR_NAME = "SELECT " +
             " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, f.id AS friend " +
             " FROM user_info u " +
             " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
             " WHERE u.sur_name LIKE ? ";
 
-    private final static String SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME = "SELECT " +
+    private static final String SEARCH_ALL_BY_FIRST_NAME_AND_SUR_NAME = "SELECT " +
             " u.id, u.first_name, u.sur_name, u.age, u.sex, u.city, f.id AS friend " +
             " FROM user_info u " +
             " LEFT OUTER JOIN user_friends f ON u.id = f.friend_info_id AND f.user_info_id = ? " +
             " WHERE u.first_name LIKE ? AND u.sur_name LIKE ?";
 
-    public UserInfoSignFriendR2dbcDao(ConnectionFactory connectionFactory) {
+    private final ConnectionFactory connectionFactory;
+
+    private final ConnectionFactory connectionFactoryRo;
+
+    public UserInfoSignFriendR2dbcDao(
+            ConnectionFactory connectionFactory,
+            @Qualifier("connectionFactoryRo") ConnectionFactory connectionFactoryRo) {
         this.connectionFactory = connectionFactory;
+        this.connectionFactoryRo = connectionFactoryRo;
     }
 
     public Mono<UserInfoSignFriend> readFriendByIdSignFriend(long friendId, long userId) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeReadById(friendId, userId, connection));
         return liftMapResultToUserInfo(resultsFlux)
                 .next()
@@ -74,7 +79,7 @@ public class UserInfoSignFriendR2dbcDao implements UserInfoSignFriendDao {
     }
 
     public Flux<UserInfoSignFriend> readAllUsersSignFriend(long id) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeReadAllUsers(id, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }
@@ -104,7 +109,7 @@ public class UserInfoSignFriendR2dbcDao implements UserInfoSignFriendDao {
 
     @Override
     public Flux<UserInfoSignFriend> searchAllBySurName(long id, String surName) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeSearchAllBySurName(id, surName, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }
@@ -119,7 +124,7 @@ public class UserInfoSignFriendR2dbcDao implements UserInfoSignFriendDao {
 
     @Override
     public Flux<UserInfoSignFriend> searchAllByFirstNameAndSurName(long id, String firstName, String surName) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeSearchAllByFirstNameAndSurName(id, firstName, surName, connection));
         return liftMapResultToUserInfo(resultsFlux);
     }

@@ -3,9 +3,10 @@ application:
     username: ${DB_USER:dbuser}
     password: ${DB_PASS:password}
     r2dbc:
-      host: ${DB_HOST:localhost}
-      port: ${DB_PORT:3306}
-      port-ro: ${DB_PORT:3305}
+      host: ${MASTER_DB_HOST:localhost}
+      host-ro: ${CLUSTER_DB_HOST:localhost}
+      port: ${MASTER_DB_PORT:3306}
+      port-ro: ${MASTER_DB_PORT:3305}
       database: ${DB_NAME:db}
       pool.duration: 30000
   reactive.duration: 30000
@@ -36,5 +37,5 @@ spring:
     pool:
       enabled: true
       initial-size: 30
-      max-size: 300
+      max-size: 1010
   thymeleaf.mode: HTML

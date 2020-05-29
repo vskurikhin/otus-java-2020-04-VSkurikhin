@@ -2,7 +2,9 @@ package su.svn.hiload.socialnetwork.view;
 
 import java.util.List;
 
-public class ApplicationForm {
+public class UserInfoDto {
+    private Long id;
+
     private String username;
 
     private String firstName;
@@ -17,9 +19,10 @@ public class ApplicationForm {
 
     private List<Interest> interests;
 
-    public ApplicationForm() { }
+    public UserInfoDto() { }
 
-    public ApplicationForm(
+    public UserInfoDto(
+            Long id,
             String username,
             String firstName,
             String surName,
@@ -27,6 +30,7 @@ public class ApplicationForm {
             String sex,
             String city,
             List<Interest> interests) {
+        this.id = id;
         this.username = username;
         this.firstName = firstName;
         this.surName = surName;
@@ -34,6 +38,14 @@ public class ApplicationForm {
         this.sex = sex;
         this.city = city;
         this.interests = interests;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getUsername() {

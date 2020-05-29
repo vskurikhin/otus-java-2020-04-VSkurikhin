@@ -3,6 +3,7 @@ package su.svn.hiload.socialnetwork.dao.r2dbc.impl;
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.Result;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -17,25 +18,30 @@ import static su.svn.hiload.socialnetwork.utils.ErrorCode.CREATE_SWITCH_IF_EMPTY
 @Repository("userProfileR2dbcDao")
 public class UserProfileR2dbcDao implements UserProfileCustomDao {
 
-    private final ConnectionFactory connectionFactory;
-
-    private final static String FIND_BY_LOGIN = "SELECT " +
+    private static final String FIND_BY_LOGIN = "SELECT " +
             " id, login, hash, expired, locked " +
             " FROM user_profile " +
             " WHERE login = ? ";
 
-    private final static String FIND_ALL = "SELECT " +
+    private static final String FIND_ALL = "SELECT " +
             " id, login, hash, expired, locked " +
             " FROM user_profile ";
 
-    private final static String CREATE = "INSERT " +
+    private static final String CREATE = "INSERT " +
             " INTO user_profile " +
             " (login, hash, expired, locked)" +
             " VALUES " +
             " (?, ?, ?, ?) ";
 
-    public UserProfileR2dbcDao(ConnectionFactory connectionFactory) {
+    private final ConnectionFactory connectionFactory;
+
+    private final ConnectionFactory connectionFactoryRo;
+
+    public UserProfileR2dbcDao(
+            ConnectionFactory connectionFactory,
+            @Qualifier("connectionFactoryRo") ConnectionFactory connectionFactoryRo) {
         this.connectionFactory = connectionFactory;
+        this.connectionFactoryRo = connectionFactoryRo;
     }
 
     @Override
@@ -60,7 +66,7 @@ public class UserProfileR2dbcDao implements UserProfileCustomDao {
 
     @Override
     public Mono<UserProfile> readFirstByLogin(String login) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> executeFindByLogin(login, connection));
         return liftMapResultToUserProfile(resultsFlux)
                 .next()
@@ -76,7 +82,7 @@ public class UserProfileR2dbcDao implements UserProfileCustomDao {
 
     @Override
     public Flux<UserProfile> readAll() {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
+        Flux<Result> resultsFlux = Mono.from(connectionFactoryRo.create())
                 .flatMapMany(connection -> Flux.from(connection.createStatement(FIND_ALL)
                 .execute())
                 .doOnSubscribe(new ClosingConsumer(connection)));
