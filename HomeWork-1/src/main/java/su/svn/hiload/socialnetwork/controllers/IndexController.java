@@ -15,7 +15,6 @@ import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.utils.ErrorEnum;
 import su.svn.hiload.socialnetwork.view.ApplicationForm;
 import su.svn.hiload.socialnetwork.view.RegistrationForm;
-import su.svn.hiload.socialnetwork.view.SearchForm;
 
 import java.net.URI;
 import java.util.ArrayList;

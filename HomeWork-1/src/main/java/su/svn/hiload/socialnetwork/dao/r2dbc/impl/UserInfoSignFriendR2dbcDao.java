@@ -143,7 +143,7 @@ public class UserInfoSignFriendR2dbcDao implements UserInfoSignFriendDao {
     }
 
     private String valueWithWildCard(String value) {
-        return '%' + value + '%';
+        return value + '%';
     }
 
     private Flux<UserInfoSignFriend> liftMapResultToUserInfo(Flux<Result> resultsFlux) {
