@@ -1,0 +1,14 @@
+Running 3m test @ http://hi-load-social-network.svn.su
+  8 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.43s     3.88s   29.22s    92.60%
+    Req/Sec    10.63      7.17    60.00     66.99%
+  Latency Distribution
+     50%    1.05s 
+     75%    2.80s 
+     90%    5.43s 
+     99%   22.90s 
+  11403 requests in 3.00m, 21.60MB read
+  Socket errors: connect 0, read 0, write 0, timeout 4
+Requests/sec:     63.32
+Transfer/sec:    122.82KB
