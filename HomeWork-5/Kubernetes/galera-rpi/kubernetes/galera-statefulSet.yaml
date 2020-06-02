@@ -58,11 +58,13 @@ spec:
         readinessProbe:
           exec:
             # Check we can execute queries over TCP (skip-networking is off).
-            command: ["bash", "-c", "mysql --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p\"${MYSQL_ROOT_PASSWORD}\" -e 'SHOW DATABASES;'"]
+            command:
+            - bash
+            - -c
+            - mysql --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p"${MYSQL_ROOT_PASSWORD}" -e 'SHOW DATABASES;'
           initialDelaySeconds: 45
           periodSeconds: 8
           timeoutSeconds: 5
-          # mysqladmin --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot ping
         volumeMounts:
         - name: config
           mountPath: /etc/mysql/conf.d
