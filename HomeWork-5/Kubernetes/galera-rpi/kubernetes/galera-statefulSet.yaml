@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: galera
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: "galera"
+  replicas: 3
+  serviceName: roundrobin-mysql
+  template:
+    metadata:
+      labels:
+        app: galera
+      namespace: default
+    spec:
+      containers:
+      - name: mariadb
+        image: vskurikhin/debian-buster-galera-armv7hf
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3306
+          name: mysql
+        - containerPort: 4444
+          name: sst
+        - containerPort: 4567
+          name: replication
+        - containerPort: 4568
+          name: ist
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: POD_SERVICE_NAME
+          value: roundrobin-mysql
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: galera
+              key: root_password
+        - name: XTRABACKUP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: galera
+              key: root_password
+        - name: MYSQL_ROOT_HOST
+          value: "%"
+        - name: MYSQL_INITDB_SKIP_TZINFO
+          value: "TRUE"
+        - name: TZ
+          value: "Europe/Moscow"
+        readinessProbe:
+          exec:
+            # Check we can execute queries over TCP (skip-networking is off).
+            command: ["bash", "-c", "mysql --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p\"${MYSQL_ROOT_PASSWORD}\" -e 'SHOW DATABASES;'"]
+          initialDelaySeconds: 45
+          periodSeconds: 8
+          timeoutSeconds: 5
+          # mysqladmin --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot ping
+        volumeMounts:
+        - name: config
+          mountPath: /etc/mysql/conf.d
+        - name: datadir
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: config
+        configMap:
+          name: mysql-config
+          items:
+            - path: "galera.cnf"
+              key: galera.cnf
+            - path: "mariadb.cnf"
+              key: mariadb.cnf
+            - path: "tune.cnf"
+              key: tune.cnf
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: slow
+      resources:
+        requests:
+          storage: 10Gi

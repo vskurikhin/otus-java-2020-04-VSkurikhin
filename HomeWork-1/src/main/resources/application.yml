@@ -3,10 +3,10 @@ application:
     username: ${DB_USER:dbuser}
     password: ${DB_PASS:password}
     r2dbc:
-      host: ${MASTER_DB_HOST:localhost}
+      host-rw: ${MASTER_DB_HOST:localhost}
       host-ro: ${CLUSTER_DB_HOST:localhost}
-      port: ${MASTER_DB_PORT:3306}
-      port-ro: ${CLUSTER_DB_PORT:3305}
+      port-rw: ${MASTER_DB_PORT:3306}
+      port-ro: ${CLUSTER_DB_PORT:3306}
       database: ${DB_NAME:db}
       pool:
         connect-timeout: 500
