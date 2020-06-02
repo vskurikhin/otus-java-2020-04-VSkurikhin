@@ -12,8 +12,6 @@ import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.view.FriendId;
 import su.svn.hiload.socialnetwork.view.UserInfoDto;
 
-import java.util.List;
-
 @RestController
 public class RestUserController {
 

@@ -27,14 +27,14 @@ import static io.r2dbc.spi.ConnectionFactoryOptions.*;
 @EnableR2dbcRepositories
 public class R2dbcConfiguration {
 
-    @Value("${application.db.r2dbc.host}")
-    private String dbHost;
+    @Value("${application.db.r2dbc.host-rw}")
+    private String dbHostRw;
 
     @Value("${application.db.r2dbc.host-ro}")
     private String dbHostRo;
 
-    @Value("${application.db.r2dbc.port}")
-    private int dbPort;
+    @Value("${application.db.r2dbc.port-rw}")
+    private int dbPortRw;
 
     @Value("${application.db.r2dbc.port-ro}")
     private int dbPortRo;
@@ -75,15 +75,15 @@ public class R2dbcConfiguration {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "pool")
                 .option(PROTOCOL, "mysql")
-                .option(HOST, dbHost)
-                .option(PORT, dbPort)
+                .option(HOST, dbHostRw)
+                .option(PORT, dbPortRw)
                 .option(USER, dbUser)
                 .option(PASSWORD, dbPassword)
                 .option(DATABASE, dbName)
                 .option(ACQUIRE_RETRY, acquireRetry)
                 .option(CONNECT_TIMEOUT, Duration.ofMillis(connectTimeout))
                 .option(INITIAL_SIZE, initialSize)
-                .option(MAX_SIZE, maxSize)
+                .option(MAX_SIZE, Math.max(maxSize, 100))
                 .option(VALIDATION_DEPTH, validationDepth)
                 .option(VALIDATION_QUERY, validationQuery)
                 .option(Option.valueOf("maxLifeTime"), poolDuration)
@@ -121,8 +121,8 @@ public class R2dbcConfiguration {
     public ConnectionFactory connectionFactoryNoPool() {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "mysql")
-                .option(HOST, dbHost)
-                .option(PORT, dbPort)
+                .option(HOST, dbHostRw)
+                .option(PORT, dbPortRw)
                 .option(USER, dbUser)
                 .option(PASSWORD, dbPassword)
                 .option(DATABASE, dbName)
@@ -157,5 +157,4 @@ public class R2dbcConfiguration {
     public UserProfileDao userProfileDao(R2dbcRepositoryFactory factory, UserProfileR2dbcDao userProfileR2dbcDao) {
         return factory.getRepository(UserProfileDao.class, userProfileR2dbcDao);
     }
-
 }
