@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserLogCustomDao;
 import su.svn.hiload.socialnetwork.model.UserLog;
-import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -42,9 +41,47 @@ public class UserLogR2dbcDao implements UserLogCustomDao {
         this.connectionFactory = connectionFactory;
         this.connectionFactoryRo = connectionFactoryRo;
     }
-
     @Override
-    public Mono<Integer> createTransaction(final UserLog userLog) {
+    public Mono<UserLog> createTransaction(final UserLog userLog) {
+        return Mono.from(connectionFactory.create())
+                .flatMap(connection -> createUserLogMono(userLog, connection));
+    }
+
+    private Mono<UserLog> createUserLogMono(UserLog userLog, Connection connection) {
+        return Mono.from(connection.beginTransaction())
+                .then(longExecution(connection))
+                .then(createUserLog(userLog, connection))
+                .map(result -> result.map((row, meta) -> getUserLogId(userLog, row)))
+                .flatMap(Mono::from)
+                .delayUntil(r -> connection.commitTransaction())
+                .doOnSuccess(v -> incrementAndGetPrint())
+                .doOnError(e -> LOG.error("createUserLogMono ", e))
+                .doFinally((st) -> connection.close());
+    }
+
+    private Mono<? extends Result> createUserLog(UserLog userLog, Connection connection) {
+        return Mono.from(connection.createStatement(CREATE)
+                .bind(0, userLog.getUserProfileId())
+                .bind(1, userLog.getDateTime())
+                .returnGeneratedValues("id")
+                .execute());
+    }
+
+    private Mono<? extends Result> longExecution(Connection connection) {
+        return Mono.from(connection.createStatement(LONG_EXECUTION_STATEMENT)
+                .returnGeneratedValues("res")
+                .execute());
+    }
+
+    private UserLog getUserLogId(UserLog userLog, Row row) {
+        Long id = row.get("id", Long.class);
+        if (id != null) {
+            userLog.setId(id);
+        }
+        return userLog;
+    }
+
+    public Mono<Integer> createTransaction1(final UserLog userLog) {
         Publisher<? extends Connection> resourceProvider = connectionFactory.create();
 
         Function<Connection, Mono<Integer>> resourceClosure = new Function<Connection, Mono<Integer>>() {
