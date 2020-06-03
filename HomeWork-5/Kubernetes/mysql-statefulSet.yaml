@@ -146,7 +146,7 @@ spec:
           mountPath: /etc/mysql/conf.d
         resources:
           requests:
-            cpu: 250m
+            cpu: 300m
             memory: 1Gi
         livenessProbe:
           exec:
@@ -154,8 +154,8 @@ spec:
             - bash
             - -c
             - mysqladmin -uroot -p"${MYSQL_ROOT_PASSWORD}" ping
-          initialDelaySeconds: 75
-          periodSeconds: 6
+          initialDelaySeconds: 65
+          periodSeconds: 5
           timeoutSeconds: 2
         readinessProbe:
           exec:
@@ -164,8 +164,8 @@ spec:
             - bash
             - -c
             - mysql -h127.0.0.1 -uroot -p"${MYSQL_ROOT_PASSWORD}" -e 'SHOW DATABASES;'
-          initialDelaySeconds: 75
-          periodSeconds: 6
+          initialDelaySeconds: 65
+          periodSeconds: 5
           timeoutSeconds: 2
       - name: xtrabackup
         image: gcr.io/google-samples/xtrabackup:1.0
@@ -223,11 +223,12 @@ spec:
             echo "Initializing replication from clone position"
             mysql -h 127.0.0.1 \
                   -u root -p$MYSQL_ROOT_PASSWORD \
-                  -e "STOP SLAVE; $(<change_master_to.sql.in), \
+                  -e "STOP SLAVE; CHANGE MASTER TO \
                           MASTER_HOST='mysql-0.mysql.default.svc.cluster.local', \
                           MASTER_USER='root', \
                           MASTER_PASSWORD='"$MYSQL_ROOT_PASSWORD"', \
-                          MASTER_CONNECT_RETRY=10; \
+                          MASTER_CONNECT_RETRY=10,
+                          MASTER_AUTO_POSITION = 1; \
                         START SLAVE;" || exit 1
             # In case of container restart, attempt this at-most-once.
             mv change_master_to.sql.in change_master_to.sql.orig
@@ -289,7 +290,7 @@ spec:
           mountPath: /etc/mysql/conf.d
         resources:
           requests:
-            cpu: 10m
+            cpu: 40m
             memory: 100Mi
       volumes:
       - name: conf

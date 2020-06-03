@@ -9,13 +9,22 @@ data:
     # Apply this config only on the master.
     [mysqld]
     log-bin
+    binlog-checksum = crc32
+    log-slave-updates = true
+    gtid-mode = on
+    enforce-gtid-consistency = true
     binlog_format = ROW
     max_connections = 600
     innodb_buffer_pool_size = 805306368
   slave.cnf: |
     # Apply this config only on slaves.
     [mysqld]
-    super-read-only
+    log-bin
+    binlog-checksum = crc32
+    log-slave-updates = true
+    gtid-mode = on
+    enforce-gtid-consistency = true
+    # super-read-only
     binlog_format = ROW
     max_connections = 600
     innodb_buffer_pool_size = 805306368
