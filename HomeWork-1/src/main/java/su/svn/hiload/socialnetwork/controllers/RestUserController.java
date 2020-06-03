@@ -8,9 +8,12 @@ import su.svn.hiload.socialnetwork.dao.UserInfoDao;
 import su.svn.hiload.socialnetwork.dao.UserInterestDao;
 import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInterest;
+import su.svn.hiload.socialnetwork.model.UserLog;
 import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.view.FriendId;
 import su.svn.hiload.socialnetwork.view.UserInfoDto;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 public class RestUserController {
@@ -18,6 +21,8 @@ public class RestUserController {
     private final UserInfoDao userInfoDao;
     private final UserInterestDao userInterestDao;
     private final ReactiveService reactiveService;
+
+    private final AtomicLong count = new AtomicLong(0);
 
     public RestUserController(UserInfoDao userInfoDao, UserInterestDao userInterestDao, ReactiveService reactiveService) {
         this.userInfoDao = userInfoDao;
@@ -47,5 +52,15 @@ public class RestUserController {
     @PostMapping(value = "${application.rest.user}/add-friend/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     private Mono<UserInfo> addFriend(@PathVariable long id, @RequestBody FriendId friendId) {
         return userInfoDao.addFriend(id, friendId.getFriendId());
+    }
+
+    @GetMapping("/public/transaction")
+    private Mono<UserLog> transaction(@RequestParam(value = "id", defaultValue = "") long id) {
+        return reactiveService.transaction(id).doOnSubscribe(subscription -> incrementAndGetPrint());
+    }
+
+    private void incrementAndGetPrint() {
+        long c = count.incrementAndGet();
+        System.err.printf("%d\r", c);
     }
 }

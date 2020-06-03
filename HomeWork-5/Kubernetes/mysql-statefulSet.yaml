@@ -233,6 +233,42 @@ spec:
             mv change_master_to.sql.in change_master_to.sql.orig
           fi
 
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          # Copy appropriate conf.d files from config-map to emptyDir.
+          if [[ $ordinal -eq 0 ]]; then
+            echo "Waiting for mysqld to be ready (accepting connections)"
+            until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
+
+            echo "Initializing replication from clone position"
+            if ! mysql -h 127.0.0.1 \
+                  -u root -p$MYSQL_ROOT_PASSWORD \
+                  -e "INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
+                      SET GLOBAL rpl_semi_sync_master_enabled = 1;
+                      SET GLOBAL rpl_semi_sync_master_timeout = 10000;
+                      INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';"
+            then
+              echo "Error code: $? of SQL: SET GLOBAL rpl_semi_sync_master_enabled = 1;"
+            else
+              echo "Query OK"
+            fi
+          else
+            echo "Waiting for mysqld to be ready (accepting connections)"
+            until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
+
+            echo "Initializing replication from clone position"
+            if ! mysql -h 127.0.0.1 \
+                  -u root -p$MYSQL_ROOT_PASSWORD \
+                  -e "SET GLOBAL rpl_semi_sync_slave_enabled = 0;
+                      STOP SLAVE IO_THREAD;
+                      START SLAVE IO_THREAD;"
+            then
+              echo "Error code: $? of SQL: SET GLOBAL rpl_semi_sync_slave_enabled = 0;"
+            else
+              echo "Query OK"
+            fi
+          fi
+
           # Start a server to send backups when requested by peers.
           exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
             "xtrabackup --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=root --password=$MYSQL_ROOT_PASSWORD"
