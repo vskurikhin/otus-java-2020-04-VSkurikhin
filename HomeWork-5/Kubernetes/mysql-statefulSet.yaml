@@ -154,9 +154,9 @@ spec:
             - bash
             - -c
             - mysqladmin -uroot -p"${MYSQL_ROOT_PASSWORD}" ping
-          initialDelaySeconds: 120
-          periodSeconds: 10
-          timeoutSeconds: 5
+          initialDelaySeconds: 75
+          periodSeconds: 6
+          timeoutSeconds: 2
         readinessProbe:
           exec:
             # Check we can execute queries over TCP (skip-networking is off).
@@ -164,9 +164,9 @@ spec:
             - bash
             - -c
             - mysql -h127.0.0.1 -uroot -p"${MYSQL_ROOT_PASSWORD}" -e 'SHOW DATABASES;'
-          initialDelaySeconds: 90
-          periodSeconds: 8
-          timeoutSeconds: 4
+          initialDelaySeconds: 75
+          periodSeconds: 6
+          timeoutSeconds: 2
       - name: xtrabackup
         image: gcr.io/google-samples/xtrabackup:1.0
         env:
@@ -240,7 +240,7 @@ spec:
             echo "Waiting for mysqld to be ready (accepting connections)"
             until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
 
-            echo "Initializing replication from clone position"
+            echo "Configure semi-sync replication"
             if ! mysql -h 127.0.0.1 \
                   -u root -p$MYSQL_ROOT_PASSWORD \
                   -e "INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
@@ -256,16 +256,25 @@ spec:
             echo "Waiting for mysqld to be ready (accepting connections)"
             until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
 
-            echo "Initializing replication from clone position"
+            echo "Configure semi-sync replication"
             if ! mysql -h 127.0.0.1 \
                   -u root -p$MYSQL_ROOT_PASSWORD \
-                  -e "SET GLOBAL rpl_semi_sync_slave_enabled = 0;
+                  -e "INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';"
+            then
+              echo "error code: $? of sql: INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';"
+            else
+              echo "query ok"
+            fi
+            echo "Enable semi-sync replication"
+            if ! mysql -h 127.0.0.1 \
+                  -u root -p$MYSQL_ROOT_PASSWORD \
+                  -e "SET GLOBAL rpl_semi_sync_slave_enabled = 1;
                       STOP SLAVE IO_THREAD;
                       START SLAVE IO_THREAD;"
             then
-              echo "Error code: $? of SQL: SET GLOBAL rpl_semi_sync_slave_enabled = 0;"
+              echo "error code: $? of sql: SET GLOBAL rpl_semi_sync_slave_enabled = 1;"
             else
-              echo "Query OK"
+              echo "query ok"
             fi
           fi
 

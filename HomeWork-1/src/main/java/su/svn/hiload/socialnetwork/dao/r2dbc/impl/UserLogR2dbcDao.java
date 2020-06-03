@@ -6,13 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import su.svn.hiload.socialnetwork.dao.r2dbc.UserLogCustomDao;
 import su.svn.hiload.socialnetwork.model.UserLog;
 import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
-import java.util.function.BiFunction;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 @Repository("userLogR2dbcDao")
@@ -22,6 +21,16 @@ public class UserLogR2dbcDao implements UserLogCustomDao {
 
     private static final String CREATE = "INSERT " +
             " INTO user_log (user_profile_id, date_time) VALUES (?, ?)";
+
+    private static final String LONG_EXECUTION_STATEMENT = "SELECT " +
+            " benchmark(" +
+            "  (SELECT FLOOR(" +
+            "   RAND((SELECT UNIX_TIMESTAMP(NOW())))" +
+            "     * (4999999 - 99999 + 1) + 99999))," +
+            "    md5('when will it end?')" +
+            ")";
+
+    private final AtomicLong count = new AtomicLong(0);
 
     private final ConnectionFactory connectionFactory;
 
@@ -35,14 +44,14 @@ public class UserLogR2dbcDao implements UserLogCustomDao {
     }
 
     @Override
-    public Mono<Integer> create(final UserLog userLog) {
+    public Mono<Integer> createTransaction(final UserLog userLog) {
         Publisher<? extends Connection> resourceProvider = connectionFactory.create();
 
         Function<Connection, Mono<Integer>> resourceClosure = new Function<Connection, Mono<Integer>>() {
 
             @Override
             public Mono<Integer> apply(Connection connection) {
-                Mono<Integer> mono = Mono.just(connection).map(obj -> {
+                Mono<Integer> monoInsertUserLog = Mono.just(connection).map(obj -> {
                     return connection.createStatement(CREATE)
                             .bind(0, userLog.getUserProfileId())
                             .bind(1, userLog.getDateTime())
@@ -52,19 +61,21 @@ public class UserLogR2dbcDao implements UserLogCustomDao {
                 }).flatMap(result -> {
                     return Mono.from(whenRowsUpdatedSetId(result, userLog));
                 }).doOnError(ex -> {
-                    ex.printStackTrace();
+                    LOG.error("UserInsertLog ", ex);
                 });
-                return Mono.from(connection.beginTransaction()).then(mono);
-            }
-        };
 
-        Function<Connection, Mono<Void>> asyncCleanup = new Function<Connection, Mono<Void>>() {
+                Mono<Integer> monoLongExecution = Mono.just(connection)
+                        .map(obj -> connection.createStatement(LONG_EXECUTION_STATEMENT)
+                        .returnGeneratedValues("res"))
+                        .flatMap(stmt -> Mono.from(stmt.execute()))
+                        .flatMap(result -> Mono.from(result.getRowsUpdated()))
+                        .doOnError(Throwable::printStackTrace);
 
-            @Override
-            public Mono<Void> apply(Connection connection) {
-                Mono<Void> commitMono = Mono.from(connection.commitTransaction());
-                // Mono<Void> closeMono = Mono.from(connection.close());
-                return commitMono;
+                Mono<Integer> monoTransaction = Mono.from(connection.beginTransaction())
+                        .then(monoLongExecution)
+                        .then(monoInsertUserLog);
+
+                return Mono.from(connection.setAutoCommit(false)).then(monoTransaction);
             }
         };
 
@@ -89,48 +100,21 @@ public class UserLogR2dbcDao implements UserLogCustomDao {
         return id;
     }
 
+    private void incrementAndGetPrint() {
+        long c = count.incrementAndGet();
+        System.err.printf("count transaction = %d\n", c);
+    }
+
+    private Function<Connection, Mono<Void>> asyncCleanup = connection -> {
+        Mono<Void> commitMono = Mono.from(connection.close());
+        return commitMono.doOnSuccess(v -> incrementAndGetPrint());
+    };
 
     /**
      * Function returning a mono which runs resource cleanup if resourceClosure
      * terminates with onError
      */
-    Function<Connection, Mono<Void>> asyncCleanupOnError = new Function<Connection, Mono<Void>>() {
-
-        @Override
-        public Mono<Void> apply(Connection connection) {
-            // Mono<Void> rollbackMono = Mono.from(connection.rollbackTransaction());
-            Mono<Void> closeMono = Mono.from(connection.close());
-            return closeMono;
-        }
+    private Function<Connection, Mono<Void>> asyncCleanupOnError = connection -> {
+        return Mono.from(connection.close());
     };
-
-    private Flux<Object> executeCreate(UserLog userLog, Connection connection) {
-
-        Mono<Result> o = Mono.from(connection.createStatement(CREATE)
-                .bind(0, userLog.getUserProfileId())
-                .bind(1, userLog.getDateTime())
-                .execute())
-                .map(new Function<Result, Result>() {
-                    @Override
-                    public Result apply(Result result) {
-                        result.map(new BiFunction<Row, RowMetadata, Result>() {
-                            @Override
-                            public Result apply(Row row, RowMetadata rowMetadata) {
-                                Long id = row.get(0, Long.class);
-                                if (id != null) {
-                                    userLog.setId(id);
-                                }
-                                return result;
-                            }
-                        });
-                        return result;
-                    }
-                })
-                .switchIfEmpty(Mono.empty());
-
-        return Mono.from(connection.beginTransaction())
-                .<Object>thenReturn(o)
-                .concatWith(connection.commitTransaction())
-                .doOnSubscribe(new ClosingConsumer(connection));
-    }
 }

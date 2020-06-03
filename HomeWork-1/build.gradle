@@ -47,6 +47,7 @@ dependencies {
     implementation 'dev.miku:r2dbc-mysql'
     implementation group: 'org.webjars', name: 'bootstrap', version: '3.4.1'
     runtimeOnly group: 'mysql', name: 'mysql-connector-java', version: libVers.mysql_connector_java
+    compile group: 'io.r2dbc', name: 'r2dbc-client', version: '0.8.0.M8'
 
 
     compileOnly group: 'org.projectlombok', name: 'lombok', version: libVers.projectlombok

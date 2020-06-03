@@ -16,7 +16,7 @@ application:
   reactive:
     buffer-size: 128
     duration: 30000
-    limit: 10
+    limit: 1000
   locale: "en_US"
   rest:
     user: "/user/api"
@@ -44,6 +44,6 @@ spring:
   r2dbc:
     pool:
       enabled: true
-      initial-size: 30
-      max-size: 1010
+      initial-size: 10
+      max-size: 30
   thymeleaf.mode: HTML
