@@ -1,0 +1,122 @@
+
+mysql-0:/# mysql -p$MYSQL_ROOT_PASSWORD -e "show plugins\G"|grep semi
+   Name: rpl_semi_sync_master
+Library: semisync_master.so
+
+mysql-1:/# mysql -p$MYSQL_ROOT_PASSWORD -e "show plugins\G"|grep semi
+   Name: rpl_semi_sync_master
+Library: semisync_master.so
+
+mysql-2:/# mysql -p$MYSQL_ROOT_PASSWORD -e "show plugins\G"|grep semi
+   Name: rpl_semi_sync_master
+Library: semisync_master.so
+
+mysql> SHOW VARIABLES LIKE 'rpl_semi_syn%';
++-------------------------------------------+------------+
+| Variable_name                             | Value      |
++-------------------------------------------+------------+
+| rpl_semi_sync_master_enabled              | ON         |
+| rpl_semi_sync_master_timeout              | 10000      |
+| rpl_semi_sync_master_trace_level          | 32         |
+| rpl_semi_sync_master_wait_for_slave_count | 1          |
+| rpl_semi_sync_master_wait_no_slave        | ON         |
+| rpl_semi_sync_master_wait_point           | AFTER_SYNC |
++-------------------------------------------+------------+
+6 rows in set (0.00 sec)
+
+mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
++--------------------------------------------+-------+
+| Variable_name                              | Value |
++--------------------------------------------+-------+
+| Rpl_semi_sync_master_clients               | 2     |
+| Rpl_semi_sync_master_net_avg_wait_time     | 0     |
+| Rpl_semi_sync_master_net_wait_time         | 0     |
+| Rpl_semi_sync_master_net_waits             | 0     |
+| Rpl_semi_sync_master_no_times              | 0     |
+| Rpl_semi_sync_master_no_tx                 | 0     |
+| Rpl_semi_sync_master_status                | ON    |
+| Rpl_semi_sync_master_timefunc_failures     | 0     |
+| Rpl_semi_sync_master_tx_avg_wait_time      | 0     |
+| Rpl_semi_sync_master_tx_wait_time          | 0     |
+| Rpl_semi_sync_master_tx_waits              | 0     |
+| Rpl_semi_sync_master_wait_pos_backtraverse | 0     |
+| Rpl_semi_sync_master_wait_sessions         | 0     |
+| Rpl_semi_sync_master_yes_tx                | 0     |
+| Rpl_semi_sync_slave_status                 | OFF   |
++--------------------------------------------+-------+
+15 rows in set (0.00 sec)
+
+mysql> create database db CHARACTER SET utf8 COLLATE utf8_general_ci;
+Query OK, 1 row affected (0.03 sec)
+
+mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
++--------------------------------------------+-------+
+| Variable_name                              | Value |
++--------------------------------------------+-------+
+| Rpl_semi_sync_master_clients               | 2     |
+| Rpl_semi_sync_master_net_avg_wait_time     | 0     |
+| Rpl_semi_sync_master_net_wait_time         | 0     |
+| Rpl_semi_sync_master_net_waits             | 2     |
+| Rpl_semi_sync_master_no_times              | 0     |
+| Rpl_semi_sync_master_no_tx                 | 0     |
+| Rpl_semi_sync_master_status                | ON    |
+| Rpl_semi_sync_master_timefunc_failures     | 0     |
+| Rpl_semi_sync_master_tx_avg_wait_time      | 577   |
+| Rpl_semi_sync_master_tx_wait_time          | 577   |
+| Rpl_semi_sync_master_tx_waits              | 1     |
+| Rpl_semi_sync_master_wait_pos_backtraverse | 0     |
+| Rpl_semi_sync_master_wait_sessions         | 0     |
+| Rpl_semi_sync_master_yes_tx                | 1     |
+| Rpl_semi_sync_slave_status                 | OFF   |
++--------------------------------------------+-------+
+15 rows in set (0.00 sec)
+
+mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
++--------------------------------------------+-------+
+| Variable_name                              | Value |
++--------------------------------------------+-------+
+| Rpl_semi_sync_master_clients               | 0     |
+| Rpl_semi_sync_master_net_avg_wait_time     | 0     |
+| Rpl_semi_sync_master_net_wait_time         | 0     |
+| Rpl_semi_sync_master_net_waits             | 0     |
+| Rpl_semi_sync_master_no_times              | 0     |
+| Rpl_semi_sync_master_no_tx                 | 0     |
+| Rpl_semi_sync_master_status                | OFF   |
+| Rpl_semi_sync_master_timefunc_failures     | 0     |
+| Rpl_semi_sync_master_tx_avg_wait_time      | 0     |
+| Rpl_semi_sync_master_tx_wait_time          | 0     |
+| Rpl_semi_sync_master_tx_waits              | 0     |
+| Rpl_semi_sync_master_wait_pos_backtraverse | 0     |
+| Rpl_semi_sync_master_wait_sessions         | 0     |
+| Rpl_semi_sync_master_yes_tx                | 0     |
+| Rpl_semi_sync_slave_status                 | OFF   |
++--------------------------------------------+-------+
+15 rows in set (0.00 sec)
+
+mysql> stop slave io_thread;
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> start slave io_thread;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
++--------------------------------------------+-------+
+| Variable_name                              | Value |
++--------------------------------------------+-------+
+| Rpl_semi_sync_master_clients               | 0     |
+| Rpl_semi_sync_master_net_avg_wait_time     | 0     |
+| Rpl_semi_sync_master_net_wait_time         | 0     |
+| Rpl_semi_sync_master_net_waits             | 0     |
+| Rpl_semi_sync_master_no_times              | 0     |
+| Rpl_semi_sync_master_no_tx                 | 0     |
+| Rpl_semi_sync_master_status                | OFF   |
+| Rpl_semi_sync_master_timefunc_failures     | 0     |
+| Rpl_semi_sync_master_tx_avg_wait_time      | 0     |
+| Rpl_semi_sync_master_tx_wait_time          | 0     |
+| Rpl_semi_sync_master_tx_waits              | 0     |
+| Rpl_semi_sync_master_wait_pos_backtraverse | 0     |
+| Rpl_semi_sync_master_wait_sessions         | 0     |
+| Rpl_semi_sync_master_yes_tx                | 0     |
+| Rpl_semi_sync_slave_status                 | ON    |
++--------------------------------------------+-------+
+15 rows in set (0.00 sec)
