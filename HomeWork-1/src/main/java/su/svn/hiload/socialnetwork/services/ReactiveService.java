@@ -361,6 +361,6 @@ public class ReactiveService {
 
     private Mono<UserLog> mapUserLog(UserProfile userProfile) {
         UserLog userLog = new UserLog(null, userProfile.getId(), LocalDateTime.now());
-        return userLogDao.create(userLog).map(v -> userLog);
+        return userLogDao.createTransaction(userLog).map(v -> userLog);
     }
 }

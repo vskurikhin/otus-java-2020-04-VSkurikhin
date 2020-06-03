@@ -13,16 +13,12 @@ import su.svn.hiload.socialnetwork.services.ReactiveService;
 import su.svn.hiload.socialnetwork.view.FriendId;
 import su.svn.hiload.socialnetwork.view.UserInfoDto;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 @RestController
 public class RestUserController {
 
     private final UserInfoDao userInfoDao;
     private final UserInterestDao userInterestDao;
     private final ReactiveService reactiveService;
-
-    private final AtomicLong count = new AtomicLong(0);
 
     public RestUserController(UserInfoDao userInfoDao, UserInterestDao userInterestDao, ReactiveService reactiveService) {
         this.userInfoDao = userInfoDao;
@@ -56,11 +52,6 @@ public class RestUserController {
 
     @GetMapping("/public/transaction")
     private Mono<UserLog> transaction(@RequestParam(value = "id", defaultValue = "") long id) {
-        return reactiveService.transaction(id).doOnSubscribe(subscription -> incrementAndGetPrint());
-    }
-
-    private void incrementAndGetPrint() {
-        long c = count.incrementAndGet();
-        System.err.printf("%d\r", c);
+        return reactiveService.transaction(id);
     }
 }

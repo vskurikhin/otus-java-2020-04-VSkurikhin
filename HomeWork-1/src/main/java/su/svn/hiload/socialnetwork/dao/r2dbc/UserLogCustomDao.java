@@ -5,5 +5,5 @@ import su.svn.hiload.socialnetwork.model.UserLog;
 
 public interface UserLogCustomDao {
 
-    Mono<Integer> create(UserLog userLog);
+    Mono<Integer> createTransaction(UserLog userLog);
 }
