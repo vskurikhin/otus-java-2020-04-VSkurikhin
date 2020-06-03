@@ -8,19 +8,14 @@ data:
   master.cnf: |
     # Apply this config only on the master.
     [mysqld]
-    log-bin = mysql-bin
+    log-bin
+    binlog_format = ROW
     max_connections = 600
-    gtid_mode = ON
-    replicate-do-db = db
-    log-slave-updates
-    enforce-gtid-consistency
     innodb_buffer_pool_size = 805306368
   slave.cnf: |
     # Apply this config only on slaves.
     [mysqld]
     super-read-only
+    binlog_format = ROW
     max_connections = 600
-    gtid_mode = ON
-    enforce-gtid-consistency
-    replicate-do-db = db
     innodb_buffer_pool_size = 805306368

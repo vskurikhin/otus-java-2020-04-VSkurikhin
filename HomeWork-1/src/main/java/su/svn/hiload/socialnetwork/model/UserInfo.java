@@ -1,6 +1,7 @@
 package su.svn.hiload.socialnetwork.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.io.Serializable;
 import java.util.Objects;

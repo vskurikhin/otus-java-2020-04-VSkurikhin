@@ -8,13 +8,11 @@ import org.thymeleaf.spring5.context.webflux.IReactiveDataDriverContextVariable;
 import org.thymeleaf.spring5.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import su.svn.hiload.socialnetwork.dao.UserInfoDao;
-import su.svn.hiload.socialnetwork.dao.UserInfoSignFriendDao;
-import su.svn.hiload.socialnetwork.dao.UserInterestDao;
-import su.svn.hiload.socialnetwork.dao.UserProfileDao;
+import su.svn.hiload.socialnetwork.dao.*;
 import su.svn.hiload.socialnetwork.model.UserInfo;
 import su.svn.hiload.socialnetwork.model.UserInfoSignFriend;
 import su.svn.hiload.socialnetwork.model.UserInterest;
+import su.svn.hiload.socialnetwork.model.UserLog;
 import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.utils.ErrorEnum;
 import su.svn.hiload.socialnetwork.utils.InterestsCollectorToForm;
@@ -22,6 +20,7 @@ import su.svn.hiload.socialnetwork.utils.ListCollectorToSizeInteger;
 import su.svn.hiload.socialnetwork.view.*;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,6 +43,8 @@ public class ReactiveService {
 
     private final UserInfoSignFriendDao userInfoSignFriendDao;
 
+    private final UserLogDao userLogDao;
+
     private final UserProfileDao userProfileDao;
 
     private final UserInterestDao userInterestDao;
@@ -56,6 +57,7 @@ public class ReactiveService {
             @Value("${application.reactive.limit}") int limit,
             UserInfoDao userInfoDao,
             UserInfoSignFriendDao userInfoSignFriendDao,
+            UserLogDao userLogDao,
             UserProfileDao userProfileDao,
             UserInterestDao userInterestDao) {
         this.encoder = new BCryptPasswordEncoder(strength);
@@ -64,6 +66,7 @@ public class ReactiveService {
         this.limit = limit;
         this.userInfoDao = userInfoDao;
         this.userInfoSignFriendDao = userInfoSignFriendDao;
+        this.userLogDao = userLogDao;
         this.userProfileDao = userProfileDao;
         this.userInterestDao = userInterestDao;
     }
@@ -348,5 +351,16 @@ public class ReactiveService {
         }
 
         return userInfoDto;
+    }
+
+    public Mono<UserLog> transaction(long id) {
+        return userProfileDao.findFirstOverId(id)
+                .flatMap(this::mapUserLog)
+                .timeout(Duration.ofMillis(duration), Mono.empty());
+    }
+
+    private Mono<UserLog> mapUserLog(UserProfile userProfile) {
+        UserLog userLog = new UserLog(null, userProfile.getId(), LocalDateTime.now());
+        return userLogDao.create(userLog).map(v -> userLog);
     }
 }

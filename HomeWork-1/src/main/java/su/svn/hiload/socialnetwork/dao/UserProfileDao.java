@@ -12,6 +12,9 @@ public interface UserProfileDao extends ReactiveCrudRepository<UserProfile, Long
     @Query("SELECT * FROM user_profile WHERE login = ?")
     Mono<UserProfile> findFirstByLogin(String login);
 
+    @Query("SELECT * FROM user_profile WHERE id > ? LIMIT 1")
+    Mono<UserProfile> findFirstOverId(long id);
+
     @Query("SELECT * FROM user_profile")
     Flux<UserProfile> findAll();
 }
