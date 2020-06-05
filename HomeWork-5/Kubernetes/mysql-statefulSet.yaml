@@ -215,38 +215,34 @@ spec:
                   MASTER_LOG_POS=${BASH_REMATCH[2]}" > change_master_to.sql.in
           fi
 
+          echo "Waiting for mysqld to be ready (accepting connections)"
+          until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
+
+          if ! mysql -h 127.0.0.1 \
+             -u root -p$MYSQL_ROOT_PASSWORD \
+             -e "INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
+                 INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';"
+          then
+              echo "Error code: $? of SQL: SET GLOBAL rpl_semi_sync_master_enabled = 1;"
+          else
+            echo "Query OK"
+          fi
+
           [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
           ordinal=${BASH_REMATCH[1]}
           # Copy appropriate conf.d files from config-map to emptyDir.
           if [[ $ordinal -eq 0 ]]; then
-            echo "Waiting for mysqld to be ready (accepting connections)"
-            until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
-
             echo "Configure semi-sync replication"
             if ! mysql -h 127.0.0.1 \
                   -u root -p$MYSQL_ROOT_PASSWORD \
-                  -e "INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
-                      SET GLOBAL rpl_semi_sync_master_enabled = 1;
-                      SET GLOBAL rpl_semi_sync_master_timeout = 10000;
-                      INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';"
+                  -e "SET GLOBAL rpl_semi_sync_master_enabled = 1;
+                      SET GLOBAL rpl_semi_sync_master_timeout = 10000;"
             then
               echo "Error code: $? of SQL: SET GLOBAL rpl_semi_sync_master_enabled = 1;"
             else
               echo "Query OK"
             fi
           else
-            echo "Waiting for mysqld to be ready (accepting connections)"
-            until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
-
-            echo "Configure semi-sync replication"
-            if ! mysql -h 127.0.0.1 \
-                  -u root -p$MYSQL_ROOT_PASSWORD \
-                  -e "INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';"
-            then
-              echo "error code: $? of sql: INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';"
-            else
-              echo "query ok"
-            fi
             echo "Enable semi-sync replication"
             if ! mysql -h 127.0.0.1 \
                   -u root -p$MYSQL_ROOT_PASSWORD \
@@ -258,14 +254,7 @@ spec:
             else
               echo "query ok"
             fi
-          fi
-
-          # Check if we need to complete a clone by starting replication.
-          if [[ -f change_master_to.sql.in ]]; then
-            echo "Waiting for mysqld to be ready (accepting connections)"
-            until mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD -e "SELECT 1"; do sleep 1; done
-
-            echo "Initializing replication from clone position"
+            # In case of container restart, attempt this at-most-once.
             mysql -h 127.0.0.1 \
                   -u root -p$MYSQL_ROOT_PASSWORD \
                   -e "STOP SLAVE; CHANGE MASTER TO \
@@ -274,8 +263,11 @@ spec:
                           MASTER_PASSWORD='"$MYSQL_ROOT_PASSWORD"', \
                           MASTER_CONNECT_RETRY=10,
                           MASTER_AUTO_POSITION = 1; \
-                        START SLAVE;" || exit 1
-            # In case of container restart, attempt this at-most-once.
+                      START SLAVE;" || exit 1
+          fi
+
+          # Check if we need to complete a clone by starting replication.
+          if [[ -f change_master_to.sql.in ]]; then
             mv change_master_to.sql.in change_master_to.sql.orig
           fi
 
