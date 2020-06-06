@@ -1,5 +1,7 @@
 package su.svn.hiload.socialnetwork.consistenthash;
 
+import su.svn.hiload.socialnetwork.exceptions.AlgorithmException;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
@@ -12,7 +14,7 @@ public class ConsistentHashRouter<T extends Node> {
     private final SortedMap<Long, VirtualNode<T>> ring = new TreeMap<>();
     private final HashFunction hashFunction;
 
-    public ConsistentHashRouter(Collection<T> pNodes, int vNodeCount) throws NoSuchAlgorithmException {
+    public ConsistentHashRouter(Collection<T> pNodes, int vNodeCount) {
         this(pNodes, vNodeCount, new MD5Hash());
     }
 
@@ -21,8 +23,7 @@ public class ConsistentHashRouter<T extends Node> {
      * @param vNodeCount   amounts of virtual nodes
      * @param hashFunction hash Function to hash Node instances
      */
-    public ConsistentHashRouter(Collection<T> pNodes, int vNodeCount, HashFunction hashFunction)
-           throws NoSuchAlgorithmException {
+    public ConsistentHashRouter(Collection<T> pNodes, int vNodeCount, HashFunction hashFunction) {
         if (hashFunction == null) {
             throw new NullPointerException("Hash Function is null");
         }
@@ -40,7 +41,7 @@ public class ConsistentHashRouter<T extends Node> {
      * @param pNode      physical node needs added to hash ring
      * @param vNodeCount the number of virtual node of the physical node. Value should be greater than or equals to 0
      */
-    public void addNode(T pNode, int vNodeCount) throws NoSuchAlgorithmException {
+    public void addNode(T pNode, int vNodeCount) {
         if (vNodeCount < 0) throw new IllegalArgumentException("illegal virtual node counts :" + vNodeCount);
         int existingReplicas = getExistingReplicas(pNode);
         for (int i = 0; i < vNodeCount; i++) {
@@ -71,7 +72,7 @@ public class ConsistentHashRouter<T extends Node> {
      * @param objectKey the object key to find a nearest Node
      * @return
      */
-    public T routeNode(String objectKey) throws NoSuchAlgorithmException {
+    public T routeNode(String objectKey) {
         if (ring.isEmpty()) {
             return null;
         }
@@ -105,8 +106,13 @@ public class ConsistentHashRouter<T extends Node> {
         }
 
         @Override
-        public long hashFunction(String key) throws NoSuchAlgorithmException {
-            MessageDigest instance = MessageDigest.getInstance("MD5");
+        public long hashFunction(String key) {
+            MessageDigest instance = null;
+            try {
+                instance = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException e) {
+                AlgorithmException.throwNow(e.getMessage());
+            }
             instance.reset();
             instance.update(key.getBytes());
             byte[] digest = instance.digest();

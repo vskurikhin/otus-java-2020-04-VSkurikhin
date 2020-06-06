@@ -7,5 +7,5 @@ public interface HashFunction {
     /**
      * Hash String to long value
      */
-    long hashFunction(String key) throws NoSuchAlgorithmException;
+    long hashFunction(String key);
 }
