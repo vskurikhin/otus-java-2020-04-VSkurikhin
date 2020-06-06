@@ -1,3 +1,0 @@
-export DBURL=jdbc:mysql://$1:3306/db
-export MASTER_DB_HOST=$1
-export CLUSTER_DB_HOST=$2

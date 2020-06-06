@@ -1,0 +1,63 @@
+buildscript {
+    dependencies {
+        classpath "io.spring.gradle:dependency-management-plugin:1.0.9.RELEASE"
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.3.0.M4'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'java'
+}
+
+group = 'su.svn'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
+static def getEnv(key, defaultValue) {
+    return System.getenv(key) ?: defaultValue
+}
+
+ext.libVers = [
+        mysql_connector_java    : getEnv('VERSHIN_MYSQL_CONNECTOR_JAVA', VERSION_MYSQL_CONNECTOR_JAVA),
+        projectlombok           : getEnv('VERSION_PROJECTLOMBOK', VERSION_PROJECTLOMBOK),
+        slf4j                   : getEnv('VERSION_ORG_SLF4J_VERSION', VERSION_ORG_SLF4J_VERSION),
+        logback                 : '1.2.3',
+]
+
+dependencies {
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: libVers.slf4j
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-logging'
+    implementation 'dev.miku:r2dbc-mysql'
+    runtimeOnly group: 'mysql', name: 'mysql-connector-java', version: libVers.mysql_connector_java
+    compile group: 'io.r2dbc', name: 'r2dbc-client', version: '0.8.0.M8'
+
+
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: libVers.projectlombok
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+test {
+    useJUnitPlatform()
+}

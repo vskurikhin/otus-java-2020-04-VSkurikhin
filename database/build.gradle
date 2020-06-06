@@ -9,6 +9,7 @@ buildscript {
         }
         classpath("org.liquibase:liquibase-core:$liquibase")
         classpath('mysql:mysql-connector-java:8.0.19')
+        classpath('org.postgresql:postgresql:42.2.13')
     }
 }
 
@@ -38,23 +39,50 @@ dependencies {
     liquibaseRuntime group: 'org.liquibase', name: 'liquibase-gradle-plugin', version: libVers.liquibase_gradle_plugin
     liquibaseRuntime group: 'org.liquibase', name: 'liquibase-groovy-dsl', version: libVers.liquibase_groovy_dsl
     liquibaseRuntime group: 'mysql', name: 'mysql-connector-java', version: libVers.mysql_connector_java
+    liquibaseRuntime group: 'org.postgresql', name: 'postgresql', version: '42.2.13'
     liquibaseRuntime group: 'ch.qos.logback', name: 'logback-core', version: libVers.logback
     liquibaseRuntime group: 'ch.qos.logback', name: 'logback-classic', version: libVers.logback
 }
 
-def db_password = getEnv('DBPASS', DATABASE_PASSWORD)
-def db_url = getEnv('DBURL', DATABASE_URL)
-def db_username = getEnv('DBUSER', DATABASE_USERNAME)
-def db_url_db = db_url + '?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC'
-def run_list = project.properties['runList'] ?: 'db_db'
+def mysql_db_password = getEnv('MYSQLDBPASS', DATABASE_PASSWORD)
+def mysql_db_url = getEnv('MYSQLDBURL', DATABASE_URL)
+def mysql_db_username = getEnv('MYSQLDBUSER', DATABASE_USERNAME)
+def mysql_db_url_db = mysql_db_url + '?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC'
+
+def pg0_db_password = getEnv('PGDBPASS0', PG0_DATABASE_PASSWORD)
+def pg0_db_url = getEnv('PGDBURL0', PG0_DATABASE_URL)
+def pg0_db_username = getEnv('PGDBUSER0', PG0_DATABASE_USERNAME)
+def pg0_db_url_db = pg0_db_url
+
+def pg1_db_password = getEnv('PGDBPASS1', PG1_DATABASE_PASSWORD)
+def pg1_db_url = getEnv('PGDBURL1', PG1_DATABASE_URL)
+def pg1_db_username = getEnv('PGDBUSER1', PG1_DATABASE_USERNAME)
+def pg1_db_url_db = pg1_db_url
+
+def run_list = project.properties['runList'] ?: 'mysql_db, pg0_db, pg1_db'
 
 liquibase {
     activities {
-        db_db {
-            changeLogFile "database/Change_Log.xml"
-            url db_url_db
-            username db_username
-            password db_password
+        mysql_db {
+            classpath "$projectDir/database/mysql/"
+            changeLogFile "mysql-Change_Log.xml"
+            url mysql_db_url_db
+            username mysql_db_username
+            password mysql_db_password
+        }
+        pg0_db {
+            classpath "$projectDir/database/pg/"
+            changeLogFile "pg-Change_Log.xml"
+            url pg0_db_url_db
+            username pg0_db_username
+            password pg0_db_password
+        }
+        pg1_db {
+            classpath "$projectDir/database/pg/"
+            changeLogFile "pg-Change_Log.xml"
+            url pg1_db_url_db
+            username pg1_db_username
+            password pg1_db_password
         }
     }
     runList = run_list

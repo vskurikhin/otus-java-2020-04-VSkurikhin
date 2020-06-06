@@ -1,0 +1,6 @@
+export MYSQLDBURL=jdbc:mysql://$1:3306/db
+export MASTER_DB_HOST=$1
+export CLUSTER_DB_HOST=$1
+
+export PGDBURL0=jdbc:postgresql://$1:5430/db
+export PGDBURL1=jdbc:postgresql://$1:5431/db
