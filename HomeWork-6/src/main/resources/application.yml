@@ -1,0 +1,49 @@
+application:
+  db:
+    username: ${DB_USER:dbuser}
+    password: ${DB_PASS:password}
+    r2dbc:
+      host-rw: ${MASTER_DB_HOST:localhost}
+      host-ro: ${CLUSTER_DB_HOST:localhost}
+      port-rw: ${MASTER_DB_PORT:3306}
+      port-ro: ${CLUSTER_DB_PORT:3306}
+      database: ${DB_NAME:db}
+      pool:
+        connect-timeout: 500
+        duration: 30000
+        validation-depth: REMOTE
+        validation-query: "SELECT 1"
+  reactive:
+    buffer-size: 128
+    duration: 30000
+    limit: 1000
+  locale: "en_US"
+  rest:
+    user: "/user/api"
+  security:
+    strength: 12
+
+logging:
+  level:
+    org.springframework: INFO
+    su.svn: INFO
+
+server:
+  port: ${PORT:5000}
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${JDBC_DATABASE_URL:jdbc:mysql://localhost/db?reconnect=true}?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    username: ${DB_USER:dbuser}
+    password: ${DB_PASS:password}
+    hikari:
+      connection-timeout: 1000
+      maximum-pool-size: 200
+  profiles.active: production
+  r2dbc:
+    pool:
+      enabled: true
+      initial-size: 10
+      max-size: 30
+  thymeleaf.mode: HTML
