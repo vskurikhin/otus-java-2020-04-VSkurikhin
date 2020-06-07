@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class UserProfile implements Serializable, DBEntry {
+
     static final long serialVersionUID = -1L;
 
     @Id

@@ -21,7 +21,4 @@ public class ServiceNode implements Node {
     public String toString() {
         return getKey();
     }
-
-    public static void main(String[] args) {
-    }
 }

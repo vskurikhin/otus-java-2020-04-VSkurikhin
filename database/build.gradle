@@ -71,14 +71,14 @@ liquibase {
             password mysql_db_password
         }
         pg0_db {
-            classpath "$projectDir/database/pg/"
+            classpath "$projectDir/database/pg0/"
             changeLogFile "pg-Change_Log.xml"
             url pg0_db_url_db
             username pg0_db_username
             password pg0_db_password
         }
         pg1_db {
-            classpath "$projectDir/database/pg/"
+            classpath "$projectDir/database/pg1/"
             changeLogFile "pg-Change_Log.xml"
             url pg1_db_url_db
             username pg1_db_username
