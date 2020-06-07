@@ -12,6 +12,7 @@ import su.svn.hiload.socialnetwork.model.security.UserProfile;
 import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import static su.svn.hiload.socialnetwork.utils.ErrorCode.CREATE_SWITCH_IF_EMPTY;
 
@@ -19,19 +20,19 @@ import static su.svn.hiload.socialnetwork.utils.ErrorCode.CREATE_SWITCH_IF_EMPTY
 public class UserProfileR2dbcDao implements UserProfileCustomDao {
 
     private static final String FIND_BY_LOGIN = "SELECT " +
-            " id, login, hash, expired, locked " +
+            " id, login, hash, expired, locked, label " +
             " FROM user_profile " +
             " WHERE login = ? ";
 
     private static final String FIND_ALL = "SELECT " +
-            " id, login, hash, expired, locked " +
+            " id, login, hash, expired, locked, label " +
             " FROM user_profile ";
 
     private static final String CREATE = "INSERT " +
             " INTO user_profile " +
-            " (login, hash, expired, locked)" +
+            " (login, hash, expired, locked, label)" +
             " VALUES " +
-            " (?, ?, ?, ?) ";
+            " (?, ?, ?, ?, ?) ";
 
     private final ConnectionFactory connectionFactory;
 
@@ -60,6 +61,7 @@ public class UserProfileR2dbcDao implements UserProfileCustomDao {
                 .bind(1, userProfile.getHash())
                 .bind(2, userProfile.isExpired())
                 .bind(3, userProfile.isLocked())
+                .bind(4, userProfile.getLabel())
                 .execute())
                 .doOnSubscribe(new ClosingConsumer(connection));
     }
@@ -96,12 +98,14 @@ public class UserProfileR2dbcDao implements UserProfileCustomDao {
             String hash = row.get("hash", String.class);
             Integer expired = row.get("expired", Integer.class);
             Integer locked = row.get("locked", Integer.class);
+            UUID label = row.get("label", UUID.class);
             Objects.requireNonNull(id);
 
             return new UserProfile(
                     id, login, hash,
                     expired != null && expired > 0,
-                    locked != null && locked != 0);
+                    locked != null && locked != 0,
+                    label);
         }));
     }
 }
