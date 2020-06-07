@@ -17,9 +17,13 @@ public class Message implements Serializable, DBEntry, Labeled {
     @Id
     private Long id;
 
-    private Long from;
+    private Long fromId;
 
-    private Long to;
+    private UUID fromLabel;
+
+    private Long toId;
+
+    private UUID toLabel;
 
     private String textMessage;
 

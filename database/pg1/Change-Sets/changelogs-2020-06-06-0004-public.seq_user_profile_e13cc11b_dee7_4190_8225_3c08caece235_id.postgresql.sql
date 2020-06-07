@@ -2,4 +2,4 @@ CREATE SEQUENCE seq_user_profile_e13cc11b_dee7_4190_8225_3c08caece235_id
   AS BIGINT;
 
 CREATE VIEW seq_user_profile_e13cc11b_dee7_4190_8225_3c08caece235_id_view
-  AS SELECT nextval('seq_user_profile_e13cc11b_dee7_4190_8225_3c08caece235_id') AS nextval;
+  AS SELECT nextval('seq_user_profile_e13cc11b_dee7_4190_8225_3c08caece235_id')::BIGINT AS nextval;
