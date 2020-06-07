@@ -1,4 +1,4 @@
-CREATE FUNCTION user_profile_id_nextval(label UUID) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION user_profile_id_nextval(label UUID) RETURNS bigint AS $$
 DECLARE
   nextval_id BIGINT;
 BEGIN
