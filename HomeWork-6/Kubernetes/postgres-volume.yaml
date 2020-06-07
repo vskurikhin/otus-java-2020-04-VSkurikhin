@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: datadir-postgres-0
+  namespace: default
+  labels:
+    app: postgres
+    podindex: "0"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /data/datadir-postgres-0/
+  storageClassName: slow
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: datadir-postgres-1
+  namespace: default
+  labels:
+    app: postgres
+    podindex: "1"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /data/datadir-postgres-1/
+  storageClassName: slow

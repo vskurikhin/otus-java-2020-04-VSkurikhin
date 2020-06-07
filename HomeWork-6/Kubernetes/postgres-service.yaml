@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: roundrobin-postgres
+  namespace: default
+  labels:
+    app: postgres
+    type: roundrobin
+spec:
+  ports:
+  - port: 5432
+    name: postgres
+  selector:
+    app: postgres
+  clusterIP: None
