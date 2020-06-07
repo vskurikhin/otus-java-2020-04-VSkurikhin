@@ -1,0 +1,4 @@
+CREATE FOREIGN TABLE IF NOT EXISTS user_profile_402dd91b_7a14_46ef_adf6_1707135426ee
+  PARTITION OF user_profile
+  FOR VALUES IN ('402dd91b-7a14-46ef-adf6-1707135426ee')
+  SERVER fdw_postgres_0;

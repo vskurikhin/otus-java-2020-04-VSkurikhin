@@ -1,0 +1,5 @@
+CREATE SEQUENCE seq_user_profile_402dd91b_7a14_46ef_adf6_1707135426ee_id
+  AS BIGINT;
+
+CREATE VIEW seq_user_profile_402dd91b_7a14_46ef_adf6_1707135426ee_id_view
+  AS SELECT nextval('seq_user_profile_402dd91b_7a14_46ef_adf6_1707135426ee_id') AS nextval;
