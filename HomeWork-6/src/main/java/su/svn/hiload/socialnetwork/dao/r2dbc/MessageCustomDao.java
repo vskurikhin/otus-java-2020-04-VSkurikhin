@@ -6,7 +6,7 @@ import su.svn.hiload.socialnetwork.model.Message;
 
 public interface MessageCustomDao {
 
-    Mono<Integer> create(Message message);
+    Mono<Message> create(Message message);
 
     Flux<Message> readAll();
 }

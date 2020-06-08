@@ -31,4 +31,12 @@ public class ReactiveService {
     public Mono<Message> create(Message message) {
         return messageDao.create(message).map(i -> message);
     }
+
+    public Mono<Message> update(Message message) {
+        return messageDao.save(message);
+    }
+
+    public Mono<Void> delete(Message message) {
+        return messageDao.delete(message);
+    }
 }

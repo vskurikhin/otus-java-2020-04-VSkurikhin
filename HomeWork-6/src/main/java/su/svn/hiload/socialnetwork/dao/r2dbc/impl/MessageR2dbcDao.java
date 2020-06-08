@@ -4,6 +4,8 @@ import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
 import io.r2dbc.spi.Result;
 import io.r2dbc.spi.Row;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
@@ -14,11 +16,12 @@ import su.svn.hiload.socialnetwork.utils.ClosingConsumer;
 
 import java.util.Objects;
 import java.util.UUID;
-
-import static su.svn.hiload.socialnetwork.utils.ErrorCode.CREATE_SWITCH_IF_EMPTY;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Repository("messageR2dbcDao")
 public class MessageR2dbcDao implements MessageCustomDao {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MessageR2dbcDao.class);
 
     private static final String FIND_ALL = "SELECT " +
             " id, label, from_id, from_label, to_id, to_label, text_message " +
@@ -28,7 +31,11 @@ public class MessageR2dbcDao implements MessageCustomDao {
             " INTO message " +
             " (id, label, from_id, from_label, to_id, to_label, text_message)" +
             " VALUES " +
-            " ((message_id_nextval($1)), $2, $3, $4, $5, $6, $7) ";
+            " ($1, $2, $3, $4, $5, $6, $7) ";
+    private static final String SELECT_NEXTVAL_ID = "SELECT message_id_nextval($1)";
+    private static final String NEXTVAL_ID = "nextval_id";
+
+    private final AtomicLong count = new AtomicLong(0);
 
     private final ConnectionFactory connectionFactory;
 
@@ -42,41 +49,53 @@ public class MessageR2dbcDao implements MessageCustomDao {
     }
 
     @Override
-    public Mono<Integer> create(Message message) {
-        Flux<Result> resultsFlux = Mono.from(connectionFactory.create())
-                .flatMapMany(connection -> executeCreate(message, connection));
-        return resultsFlux
-                // .flatMap(result -> result.map((row, meta) -> getMessageId(message, row)))
-                .flatMap(Result::getRowsUpdated)
-                .next()
-                .switchIfEmpty(Mono.just(CREATE_SWITCH_IF_EMPTY));
+    public Mono<Message> create(final Message message) {
+        return Mono.from(connectionFactory.create())
+                .flatMap(connection -> createTransaction(connection, message));
     }
-    /*
-                .flatMap(result -> result.map((row, rowMetadata) -> row.get(0, Integer.class)))
-                .flatMap(count -> count > 0 ? readFirstById(friendId) : Mono.empty())
-                .next()
-     */
 
-    private Message getMessageId(Message message, Row row) {
-        Long id = row.get("id", Long.class);
+    private Mono<? extends Message> createTransaction(Connection connection, final Message message) {
+        return Mono.from(connection.beginTransaction())
+                .then(getNextvalId(connection, message))
+                .map(result -> result.map((row, meta) -> setMessageId(message, row)))
+                .flatMap(Mono::from)
+                .map(m1 -> executeCreate(connection, message))
+                .flatMap(r -> Mono.just(message))
+                .delayUntil(m2 -> connection.commitTransaction())
+                .doOnSuccess(m3 -> incrementAndGetPrint())
+                .doOnError(e -> LOG.error("createUserLogMono ", e))
+                .doFinally((st) -> connection.close());
+    }
+
+    private void incrementAndGetPrint() {
+        long c = count.incrementAndGet();
+    }
+
+    private Message setMessageId(final Message message, Row row) {
+        Long id = row.get(NEXTVAL_ID, Long.class);
         if (id != null) {
             message.setId(id);
         }
         return message;
     }
 
-    private Flux<? extends Result> executeCreate(Message message, Connection connection) {
-        return Flux.from(connection.createStatement(CREATE)
+    private Mono<? extends Result> getNextvalId(Connection connection, Message message) {
+        return Mono.from(connection.createStatement(SELECT_NEXTVAL_ID)
                 .bind("$1", message.getLabel())
+                .returnGeneratedValues(NEXTVAL_ID)
+                .execute());
+    }
+
+    private Mono<? extends Result> executeCreate(Connection connection, Message message) {
+        return Mono.from(connection.createStatement(CREATE)
+                .bind("$1", message.getId())
                 .bind("$2", message.getLabel())
                 .bind("$3", message.getFromId())
                 .bind("$4", message.getFromLabel())
                 .bind("$5", message.getToId())
                 .bind("$6", message.getToLabel())
                 .bind("$7", message.getTextMessage())
-                .returnGeneratedValues("id")
-                .execute())
-                .doOnSubscribe(new ClosingConsumer(connection));
+                .execute());
     }
 
     @Override

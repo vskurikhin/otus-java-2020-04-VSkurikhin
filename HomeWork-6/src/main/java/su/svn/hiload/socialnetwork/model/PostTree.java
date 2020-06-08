@@ -16,7 +16,7 @@ public class PostTree implements Serializable, DBEntry, Labeled {
     @Id
     private Long id;
 
-    private Long parentId;
-
     private UUID label;
+
+    private Long parentId;
 }
