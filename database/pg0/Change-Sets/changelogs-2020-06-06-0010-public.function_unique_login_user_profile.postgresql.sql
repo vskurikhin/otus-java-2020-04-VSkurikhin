@@ -1,10 +1,10 @@
 CREATE OR REPLACE FUNCTION unique_login_user() RETURNS trigger AS $$
 DECLARE
-  login_exists VARCHAR(32);
+  count BIGINT;
 BEGIN
-  SELECT NEW.login FROM public.user_profile WHERE login = NEW.login INTO login_exists;
+  SELECT COUNT(login) FROM public.user_profile WHERE login = NEW.login INTO count;
 
-  IF login_exists IS NULL THEN
+  IF count > 0 THEN
     RAISE EXCEPTION 'login exists!';
   END IF;
 

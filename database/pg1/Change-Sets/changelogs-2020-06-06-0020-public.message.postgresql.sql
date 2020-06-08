@@ -5,6 +5,6 @@ CREATE TABLE IF NOT EXISTS message (
   from_label  UUID NOT NULL,
   to_id       BIGINT,
   to_label    UUID NOT NULL,
-  textMessage VARCHAR(256) NOT NULL)
+  text_message VARCHAR(256) NOT NULL)
 
 PARTITION BY LIST (label);

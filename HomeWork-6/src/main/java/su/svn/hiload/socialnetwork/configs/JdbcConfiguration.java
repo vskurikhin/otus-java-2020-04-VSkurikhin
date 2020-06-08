@@ -56,7 +56,8 @@ public class JdbcConfiguration {
     @ConditionalOnMissingBean(AbstractTransactionManagementConfiguration.class)
     @Configuration
     @EnableTransactionManagement
-    protected static class TransactionManagementConfiguration { }
+    protected static class TransactionManagementConfiguration {
+    }
 
     @Bean
     public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
@@ -87,3 +88,4 @@ public class JdbcConfiguration {
         return new JdbcTemplate(dataSource());
     }
 }
+

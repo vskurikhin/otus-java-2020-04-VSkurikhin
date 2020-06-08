@@ -1,34 +1,42 @@
 package su.svn.hiload.socialnetwork.services;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import su.svn.hiload.socialnetwork.dao.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import su.svn.hiload.socialnetwork.dao.MessageDao;
+import su.svn.hiload.socialnetwork.dao.UserProfileDao;
+import su.svn.hiload.socialnetwork.model.Message;
+import su.svn.hiload.socialnetwork.model.security.UserProfile;
 
 @Service
 public class ReactiveService {
 
-    private BCryptPasswordEncoder encoder;
+    private final UserProfileDao userProfileDao;
 
-    private final int bufferSize;
+    private final MessageDao messageDao;
 
-    private final int duration;
+    public ReactiveService(UserProfileDao userProfileDao, MessageDao messageDao) {
+        this.userProfileDao = userProfileDao;
+        this.messageDao = messageDao;
+    }
 
-    private final int limit;
+    public Flux<UserProfile> searchUserProfilesAll() {
+        return userProfileDao.findAll();
+    }
 
-    // private final UserProfileDao userProfileDao;
+    public Flux<Message> searchMessagesAll() {
+        return messageDao.findAll();
+    }
 
+    public Mono<Message> create(Message message) {
+        return messageDao.create(message).map(i -> message);
+    }
 
-    public ReactiveService(
-            @Value("${application.security.strength}") int strength,
-            @Value("${application.reactive.buffer-size}") int bufferSize,
-            @Value("${application.reactive.duration}") int duration,
-            @Value("${application.reactive.limit}") int limit /*,
-            UserProfileDao userProfileDao */) {
-        this.encoder = new BCryptPasswordEncoder(strength);
-        this.bufferSize = bufferSize;
-        this.duration = duration;
-        this.limit = limit;
-        // this.userProfileDao = userProfileDao;
+    public Mono<Message> update(Message message) {
+        return messageDao.save(message);
+    }
+
+    public Mono<Void> delete(Message message) {
+        return messageDao.delete(message);
     }
 }

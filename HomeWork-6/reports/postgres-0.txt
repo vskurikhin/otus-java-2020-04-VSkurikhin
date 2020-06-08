@@ -1,0 +1,19 @@
+db=# \d
+                                        List of relations
+ Schema |                             Name                              |     Type      | Owner  
+--------+---------------------------------------------------------------+---------------+--------
+ public | databasechangelog                                             | table         | dbuser
+ public | databasechangeloglock                                         | table         | dbuser
+ public | dual                                                          | table         | dbuser
+ public | message                                                       | table         | dbuser
+ public | message_402dd91b_7a14_46ef_adf6_1707135426ee                  | table         | dbuser
+ public | message_e13cc11b_dee7_4190_8225_3c08caece235                  | foreign table | dbuser
+ public | seq_message_402dd91b_7a14_46ef_adf6_1707135426ee_id           | sequence      | dbuser
+ public | seq_message_402dd91b_7a14_46ef_adf6_1707135426ee_id_view      | view          | dbuser
+ public | seq_message_e13cc11b_dee7_4190_8225_3c08caece235_id_view      | foreign table | dbuser
+ public | seq_user_profile_402dd91b_7a14_46ef_adf6_1707135426ee_id      | sequence      | dbuser
+ public | seq_user_profile_402dd91b_7a14_46ef_adf6_1707135426ee_id_view | view          | dbuser
+ public | seq_user_profile_e13cc11b_dee7_4190_8225_3c08caece235_id_view | foreign table | dbuser
+ public | user_profile                                                  | table         | dbuser
+ public | user_profile_402dd91b_7a14_46ef_adf6_1707135426ee             | table         | dbuser
+ public | user_profile_e13cc11b_dee7_4190_8225_3c08caece235             | foreign table | dbuser

@@ -11,7 +11,9 @@ import org.springframework.data.r2dbc.core.ReactiveDataAccessStrategy;
 import org.springframework.data.r2dbc.dialect.MySqlDialect;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
+import su.svn.hiload.socialnetwork.dao.MessageDao;
 import su.svn.hiload.socialnetwork.dao.UserProfileDao;
+import su.svn.hiload.socialnetwork.dao.r2dbc.impl.MessageR2dbcDao;
 import su.svn.hiload.socialnetwork.dao.r2dbc.impl.UserProfileR2dbcDao;
 
 import java.time.Duration;
@@ -70,7 +72,7 @@ public class R2dbcConfiguration {
     public ConnectionFactory connectionFactory() {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "pool")
-                .option(PROTOCOL, "mysql")
+                .option(PROTOCOL, "postgresql")
                 .option(HOST, dbHostRw)
                 .option(PORT, dbPortRw)
                 .option(USER, dbUser)
@@ -94,7 +96,7 @@ public class R2dbcConfiguration {
     public ConnectionFactory connectionFactoryRo() {
         ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
                 .option(DRIVER, "pool")
-                .option(PROTOCOL, "mysql")
+                .option(PROTOCOL, "postgresql")
                 .option(HOST, dbHostRo)
                 .option(PORT, dbPortRo)
                 .option(USER, dbUser)
@@ -114,21 +116,6 @@ public class R2dbcConfiguration {
         return ConnectionFactories.get(options);
     }
 
-    public ConnectionFactory connectionFactoryNoPool() {
-        ConnectionFactoryOptions options = ConnectionFactoryOptions.builder()
-                .option(DRIVER, "mysql")
-                .option(HOST, dbHostRw)
-                .option(PORT, dbPortRw)
-                .option(USER, dbUser)
-                .option(PASSWORD, dbPassword)
-                .option(DATABASE, dbName)
-                .option(CONNECT_TIMEOUT, Duration.ofSeconds(3)) // optional, default null, null means no timeout
-                .option(SSL, false) // optional, default is enabled, it will be ignore if "sslMode" is set
-                .option(Option.valueOf("useServerPrepareStatement"), true) // optional, default false
-                .build();
-        return ConnectionFactories.get(options);
-    }
-
     @Bean
     public ReactiveDataAccessStrategy reactiveDataAccessStrategy() {
         return new DefaultReactiveDataAccessStrategy(MySqlDialect.INSTANCE);
@@ -139,8 +126,13 @@ public class R2dbcConfiguration {
         return new R2dbcRepositoryFactory(client, strategy);
     }
 
-    @Bean("userProfileDao1")
+    @Bean("userProfileDao")
     public UserProfileDao userProfileDao(R2dbcRepositoryFactory factory, UserProfileR2dbcDao userProfileR2dbcDao) {
         return factory.getRepository(UserProfileDao.class, userProfileR2dbcDao);
+    }
+
+    @Bean("messageDao")
+    public MessageDao messageDao(R2dbcRepositoryFactory factory, MessageR2dbcDao messageR2dbcDao) {
+        return factory.getRepository(MessageDao.class, messageR2dbcDao);
     }
 }

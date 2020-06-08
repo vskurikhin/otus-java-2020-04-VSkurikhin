@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION unique_login_user() RETURNS trigger AS $$
 DECLARE
   count BIGINT;
 BEGIN
-  SELECT COUNT(id, label) FROM public.user_profile WHERE login = NEW.login INTO count;
+  SELECT COUNT(login) FROM public.user_profile WHERE login = NEW.login INTO count;
 
   IF count > 0 THEN
     RAISE EXCEPTION 'login exists!';
